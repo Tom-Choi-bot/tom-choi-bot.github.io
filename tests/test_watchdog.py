@@ -8,13 +8,21 @@ class WatchdogTests(unittest.TestCase):
                 '<section class="brief-section" id="us-market"></section>'
                 '<section class="brief-section" id="kr-market"></section>'
                 '<section class="brief-section" id="global"></section>'
-                + '<article class="news-card"></article>' * 4)
+                + '<article class="news-card"><div class="analysis-block mechanism">작동 원리</div></article>' * 4)
         self.assertEqual(check_home(html, "2026-10-06"), "")
 
     def test_alerts_when_today_has_only_one_story(self):
         html = ('<span class="hero-date">2026-10-06 06:00 KST 기준</span>'
                 '<article class="news-card"></article>')
         self.assertIn("섹션별", check_home(html, "2026-10-06"))
+
+    def test_alerts_when_four_stories_lack_mechanisms(self):
+        html = ('<span class="hero-date">2026-10-06 06:00 KST 기준</span>'
+                '<section class="brief-section" id="us-market"></section>'
+                '<section class="brief-section" id="kr-market"></section>'
+                '<section class="brief-section" id="global"></section>'
+                + '<article class="news-card"></article>' * 4)
+        self.assertIn("원리", check_home(html, "2026-10-06"))
 
     def test_alerts_if_site_still_shows_yesterday(self):
         html = '<span class="hero-date">2026-10-05 06:00 KST 기준</span>'

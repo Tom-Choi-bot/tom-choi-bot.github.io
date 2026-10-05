@@ -113,6 +113,8 @@ def validate_post(post: dict) -> None:
             raise ValueError("sectioned brief needs four items across US, Korea and global sections")
         if any(i.get("section") not in SECTIONS for i in items):
             raise ValueError("invalid item section")
+        if any(not isinstance(i.get("mechanism"), str) or len(i["mechanism"].strip()) < 40 for i in items):
+            raise ValueError("each sectioned item needs a substantive causal mechanism")
     elif post.get("brief_type") is not None:
         raise ValueError("invalid brief_type")
     calendar = post.get("calendar", [])
@@ -176,10 +178,14 @@ def stamp(timestamp: str) -> str:
 
 def item_card(item: dict) -> str:
     published = stamp(item["published_at"]) if "published_at" in item else e(item["published_on"] + " (시각 미공개)")
+    mechanism = item.get("mechanism")
+    fact_label = '<div class="analysis-label fact-label">확인된 정보</div>' if mechanism else ''
+    mechanism_html = f'<div class="analysis-block mechanism"><div class="analysis-label">작동 원리</div><p>{e(mechanism)}</p></div>' if mechanism else ''
+    insight_label = "인사이트·한계" if mechanism else "읽는 법"
     return f'''<article class="news-card"><div class="card-top"><span class="tag">{e(item['category'])}</span><span class="published">발표 {published}</span></div>
-<h3>{e(item['title'])}</h3><p class="summary">{e(item['summary'])}</p>
-<div class="analysis-block"><div class="analysis-label">배경과 숫자</div><p>{e(item['context'])}</p></div>
-<div class="analysis-block"><div class="analysis-label">읽는 법</div><p>{e(item['why_it_matters'])}</p></div>
+<h3>{e(item['title'])}</h3>{fact_label}<p class="summary">{e(item['summary'])}</p>
+<div class="analysis-block"><div class="analysis-label">숫자와 맥락</div><p>{e(item['context'])}</p></div>
+{mechanism_html}<div class="analysis-block"><div class="analysis-label">{insight_label}</div><p>{e(item['why_it_matters'])}</p></div>
 <div class="next-check"><strong>다음에 확인할 것</strong><p>{e(item['watch_next'])}</p></div>
 <a class="source" href="{e(item['url'])}" target="_blank" rel="noopener noreferrer">원문 · {e(item['source'])} <span aria-hidden="true">↗</span></a></article>'''
 

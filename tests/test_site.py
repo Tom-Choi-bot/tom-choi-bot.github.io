@@ -99,7 +99,8 @@ class SiteTests(unittest.TestCase):
             ("부동산", "부동산", "housing"),
         ]:
             item = deepcopy(self.post["items"][0])
-            item.update(section=section, category=category, title=f"{section} 분석 {suffix}", url=f"https://example.org/{suffix}")
+            item.update(section=section, category=category, title=f"{section} 분석 {suffix}", url=f"https://example.org/{suffix}",
+                        mechanism="통계의 대상 기간과 실제 가격 결정 경로를 구분해야 합니다. 하나의 지표가 가격을 직접 결정하지는 않습니다.")
             post["items"].append(item)
         post["calendar"] = [{
             "at": "2026-10-08T03:00:00+09:00", "event": "9월 FOMC 의사록 공개",
@@ -126,6 +127,19 @@ class SiteTests(unittest.TestCase):
             self.assertIn("2026-10-08 03:00 KST", home)
             self.assertIn('https://example.org/calendar', home)
             self.assertIn('href="/terms/"', home)
+            self.assertIn("확인된 정보", home)
+            self.assertIn("작동 원리", home)
+            self.assertIn("인사이트·한계", home)
+            self.assertIn("통계의 대상 기간과 실제 가격 결정 경로", home)
+
+    def test_sectioned_brief_requires_substantive_mechanism(self):
+        post = self.sectioned_post()
+        post["items"][0].pop("mechanism")
+        with self.assertRaises(ValueError):
+            validate_post(post)
+        post["items"][0]["mechanism"] = "원리"
+        with self.assertRaises(ValueError):
+            validate_post(post)
 
     def test_sectioned_brief_rejects_missing_market_region(self):
         post = self.sectioned_post()

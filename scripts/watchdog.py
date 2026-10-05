@@ -20,6 +20,9 @@ def check_home(html: str, expected_date: str) -> str:
     item_count = len(re.findall(r'<article\s+class="news-card"', html))
     if missing or item_count < 4:
         return f"시장노트 {expected_date} 섹션별 브리핑 미완성: 소식 {item_count}건, 누락 섹션 {', '.join(missing)}"
+    mechanism_count = len(re.findall(r'<div\s+class="analysis-block mechanism"', html))
+    if mechanism_count != item_count:
+        return f"시장노트 {expected_date} 작동 원리 설명 누락: 소식 {item_count}건 중 원리 {mechanism_count}건"
     return ""
 
 
