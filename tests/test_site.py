@@ -11,11 +11,12 @@ class SiteTests(unittest.TestCase):
     def setUp(self):
         self.post = {
             "date": "2026-10-05",
+            "cutoff_at": "2026-10-05T06:00:00+09:00",
             "headline": "오늘의 시장 브리핑",
             "items": [{
                 "category": "경제", "title": "확인된 발표", "summary": "공식 발표의 핵심을 요약합니다.",
                 "why_it_matters": "해석은 사실과 구분합니다.", "source": "발표 기관",
-                "url": "https://example.org/release/1", "published_at": "2026-10-05T09:00:00+09:00",
+                "url": "https://example.org/release/1", "published_at": "2026-10-02T16:00:00+09:00",
             }],
             "money_flow": [{
                 "label": "금리·환율", "text": "출처가 있는 흐름만 설명합니다.",
@@ -30,6 +31,11 @@ class SiteTests(unittest.TestCase):
 
     def test_rejects_duplicate_item_link(self):
         self.post["items"].append(dict(self.post["items"][0]))
+        with self.assertRaises(ValueError):
+            validate_post(self.post)
+
+    def test_rejects_item_published_after_briefing_cutoff(self):
+        self.post["items"][0]["published_at"] = "2026-10-05T10:00:00+09:00"
         with self.assertRaises(ValueError):
             validate_post(self.post)
 
@@ -50,6 +56,7 @@ class SiteTests(unittest.TestCase):
             self.assertIn("돈의 흐름", home)
             self.assertIn("확인된 발표", home)
             self.assertIn("2026-10-04", home)
+            self.assertIn("06:00 KST 기준", home)
             self.assertTrue((root / "dist/2026-10-05/index.html").exists())
             self.assertTrue((root / "dist/archive/index.html").exists())
             self.assertTrue((root / "dist/feed.xml").exists())

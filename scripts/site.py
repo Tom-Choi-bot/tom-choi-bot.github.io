@@ -36,6 +36,12 @@ def validate_post(post: dict) -> None:
         date.fromisoformat(post["date"])
     except (KeyError, TypeError, ValueError) as exc:
         raise ValueError("post.date must be ISO YYYY-MM-DD") from exc
+    try:
+        cutoff = datetime.fromisoformat(post["cutoff_at"])
+        if cutoff.tzinfo is None or cutoff.date().isoformat() != post["date"]:
+            raise ValueError("cutoff/date mismatch")
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError("cutoff_at needs timezone and the post date") from exc
     if not isinstance(post.get("headline"), str) or not post["headline"].strip():
         raise ValueError("headline required")
     items = post.get("items")
@@ -54,6 +60,8 @@ def validate_post(post: dict) -> None:
             parsed = datetime.fromisoformat(item["published_at"])
             if parsed.tzinfo is None:
                 raise ValueError("timezone missing")
+            if parsed > cutoff:
+                raise ValueError("item published after briefing cutoff")
         except (TypeError, ValueError) as exc:
             raise ValueError("item.published_at needs timezone") from exc
         url = item.get("url")
@@ -75,7 +83,8 @@ def validate_post(post: dict) -> None:
         if not valid_url(flow.get("url")):
             raise ValueError("money_flow.url required")
         try:
-            date.fromisoformat(flow["as_of"])
+            if date.fromisoformat(flow["as_of"]) > cutoff.date():
+                raise ValueError("money_flow date after cutoff")
         except ValueError as exc:
             raise ValueError("money_flow.as_of needs ISO date") from exc
 
@@ -113,11 +122,12 @@ def flow_card(flow: dict) -> str:
 
 def brief_body(post: dict, *, home: bool = False) -> str:
     published = e(post["date"])
+    cutoff = e(post["cutoff_at"][11:16])
     items = "".join(item_card(item) for item in post["items"])
     flows = post.get("money_flow", [])
     flow_html = "".join(flow_card(flow) for flow in flows) if flows else '<p class="empty-flow">오늘 확인 가능한 자금 흐름 자료가 없습니다. 오래된 수치를 오늘 수치처럼 게시하지 않습니다.</p>'
     label = "오늘의 브리핑" if home else "일일 브리핑"
-    return f'''<main id="main" class="wrap"><section class="hero"><div class="eyebrow"><span class="live-dot"></span> {label} <span class="hero-date">{published} · KST</span></div>
+    return f'''<main id="main" class="wrap"><section class="hero"><div class="eyebrow"><span class="live-dot"></span> {label} <span class="hero-date">{published} {cutoff} KST 기준</span></div>
 <h1>{e(post['headline'])}</h1><p class="hero-description">핵심만 읽고, 원문으로 확인하세요. 사실과 해석을 나누어 전합니다.</p></section>
 <div class="content-grid"><div class="main-column"><div class="section-heading"><h2>오늘의 소식</h2><span>{len(post['items'])}건의 확인된 소식</span></div><div class="news-list">{items}</div></div>
 <aside class="side-column" aria-label="돈의 흐름"><div class="flow-panel"><div class="panel-label">FOCUS / MONEY FLOW</div><h2>돈의 흐름</h2><p class="panel-intro">자금의 방향을 숫자의 기준일과 함께 봅니다.</p>{flow_html}</div></aside></div>

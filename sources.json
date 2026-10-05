@@ -1,0 +1,17 @@
+[
+  {
+    "name": "한국은행 금융시장",
+    "category": "주식",
+    "url": "https://www.bok.or.kr/portal/bbs/P0002018/news.rss?menuNo=200366"
+  },
+  {
+    "name": "한국은행 경제통계",
+    "category": "경제",
+    "url": "https://www.bok.or.kr/portal/bbs/B0000501/news.rss?menuNo=201264"
+  },
+  {
+    "name": "국토교통부 보도자료",
+    "category": "부동산",
+    "url": "https://www.molit.go.kr/dev/board/board_rss.jsp?rss_id=NEWS"
+  }
+]

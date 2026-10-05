@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import http.cookiejar
 import json
 import re
 import sys
@@ -10,9 +11,11 @@ from email.utils import parsedate_to_datetime
 from html import unescape
 from html.parser import HTMLParser
 from pathlib import Path
-from urllib.request import Request, urlopen
+from urllib.request import HTTPCookieProcessor, Request, build_opener
 from xml.etree import ElementTree as ET
 
+if not __package__:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts.site import valid_url
 
 ATOM = "{http://www.w3.org/2005/Atom}"
@@ -75,14 +78,15 @@ def parse_feed(xml: bytes, *, source: str, category: str) -> list[dict]:
     return entries
 
 
-def collect(sources: list[dict], *, now: datetime | None = None, hours: int = 48) -> dict:
+def collect(sources: list[dict], *, now: datetime | None = None, hours: int = 120) -> dict:
     now = now or datetime.now(timezone.utc)
     cutoff = now - timedelta(hours=hours)
     items, failures, seen = [], [], set()
+    opener = build_opener(HTTPCookieProcessor(http.cookiejar.CookieJar()))
     for feed in sources:
         try:
             request = Request(feed["url"], headers={"User-Agent": "MarketNote/1.0 (+https://tom-choi-bot.github.io/method/)", "Accept": "application/rss+xml, application/atom+xml, application/xml, text/xml"})
-            with urlopen(request, timeout=15) as response:
+            with opener.open(request, timeout=15) as response:
                 raw = response.read(2_000_000)
             entries = parse_feed(raw, source=feed["name"], category=feed["category"])
             for entry in entries:
@@ -106,7 +110,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--sources", type=Path, default=Path("sources.json"))
     parser.add_argument("--output", type=Path, default=Path("data/inbox.json"))
-    parser.add_argument("--hours", type=int, default=48)
+    parser.add_argument("--hours", type=int, default=120)
     args = parser.parse_args()
     sources = json.loads(args.sources.read_text(encoding="utf-8"))
     result = collect(sources, hours=args.hours)
