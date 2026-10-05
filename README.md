@@ -1,0 +1,33 @@
+# 시장노트
+
+출처와 발표 시점을 밝히는 한국 경제·주식·부동산 일일 브리핑. 모바일 우선 정적 사이트입니다.
+
+## 구조
+
+- `content/YYYY-MM-DD.json`: 날짜별 검증 가능한 발행 원고
+- `scripts/site.py`: 표준 라이브러리만 사용하는 정적 사이트 생성기
+- `scripts/collect.py`: 공개 RSS/Atom의 *후보* 수집기 (수집 결과는 게시물이 아님)
+- `sources.json`: 사용할 공개 피드와 분류
+- `tests/`: 내용 검사, HTML 이스케이프, 피드 파서 테스트
+- `.github/workflows/pages.yml`: main에 푸시되면 테스트→빌드→Pages 배포
+
+## 로컬 작업
+
+```sh
+python3 -m unittest discover -s tests -v
+python3 scripts/collect.py --sources sources.json --output data/inbox.json
+python3 scripts/site.py --content content --output dist
+python3 -m http.server --directory dist 8000
+```
+
+게시 전 각 항목에 카테고리(경제/주식/부동산), 자체 요약, 발표 시각(시간대 포함), 원문 URL, 출처가 있어야 합니다. `돈의 흐름`은 수치·서술의 기준일과 원문 출처가 있어야 합니다. 출처를 확인하지 못하면 게시하지 않습니다. 기사 본문을 복제하지 않습니다.
+
+## 발행
+
+평소 원고 생성은 별도의 Hermes 예약 작업에서 **매일 06:00 Asia/Seoul**에 실행합니다. 이 작업은 출처를 확인한 뒤 이 저장소에 원고를 커밋·푸시합니다. 푸시가 GitHub Actions Pages 배포를 실행합니다. 원고 생성에 GitHub Actions의 개인 토큰이나 별도 유료 LLM API 키를 저장하지 않습니다. 예약 작업이 실행되지 않거나 출처 검증에 실패하면 새 글은 발행하지 않고 기존 사이트를 보존합니다.
+
+수동 재배포는 Actions의 `workflow_dispatch`를 사용합니다. 개인 토큰은 저장소 파일·Actions secrets·원고에 넣지 않습니다.
+
+## 책임 있는 해설
+
+이 사이트는 투자 권유가 아닙니다. 자료 발표 시점과 집계 기준일을 구분하며, 해석은 사실과 분리합니다. 허용되지 않은 데이터 재배포·기사 본문 복제를 피합니다.

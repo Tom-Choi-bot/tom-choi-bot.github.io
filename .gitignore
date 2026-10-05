@@ -1,0 +1,7 @@
+dist/
+data/inbox.json
+__pycache__/
+*.pyc
+.DS_Store
+.env
+*.log
