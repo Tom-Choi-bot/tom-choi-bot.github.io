@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.site import render_site, validate_post
+from scripts.site import render_site, validate_post, validate_terms
 from scripts.collect import parse_feed
 
 
@@ -13,9 +13,12 @@ class SiteTests(unittest.TestCase):
             "date": "2026-10-05",
             "cutoff_at": "2026-10-05T06:00:00+09:00",
             "headline": "오늘의 시장 브리핑",
+            "lead": "주가와 금리, 주택 정책을 발표일과 자료 기준일로 구분해 읽습니다. 확인 가능한 원자료만 연결합니다.",
             "items": [{
-                "category": "경제", "title": "확인된 발표", "summary": "공식 발표의 핵심을 요약합니다.",
-                "why_it_matters": "해석은 사실과 구분합니다.", "source": "발표 기관",
+                "category": "경제", "title": "확인된 발표", "summary": "공식 발표에서 확인된 숫자와 발표 시점을 구분해 자세히 설명합니다.",
+                "context": "이 자료는 과거 월간 통계입니다. 발표일을 오늘의 실시간 시장가격으로 오해해서는 안 됩니다.",
+                "why_it_matters": "같은 수치라도 기준일이 다르면 해석과 비교 대상이 달라집니다.",
+                "watch_next": "다음 달 공표될 수치를 확인하고 이번 발표와 비교합니다.", "source": "발표 기관",
                 "url": "https://example.org/release/1", "published_at": "2026-10-02T16:00:00+09:00",
             }],
             "money_flow": [{
@@ -44,7 +47,16 @@ class SiteTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_post(self.post)
 
-    def test_renders_mobile_home_sections_archive_and_rss(self):
+    def test_rejects_thin_editorial_content(self):
+        self.post["items"][0]["context"] = "짧음"
+        with self.assertRaises(ValueError):
+            validate_post(self.post)
+
+    def test_rejects_unsourced_glossary_entry(self):
+        with self.assertRaises(ValueError):
+            validate_terms([{"term": "금리", "definition": "설명", "example": "예시", "source": "기관", "url": ""}])
+
+    def test_renders_mobile_home_sections_glossary_and_rss(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             content = root / "content"
@@ -57,8 +69,15 @@ class SiteTests(unittest.TestCase):
             self.assertIn("확인된 발표", home)
             self.assertIn("2026-10-04", home)
             self.assertIn("06:00 KST 기준", home)
+            self.assertIn("다음 달 공표될 수치", home)
+            self.assertIn("/terms/", home)
+            self.assertNotIn("/archive/", home)
             self.assertTrue((root / "dist/2026-10-05/index.html").exists())
-            self.assertTrue((root / "dist/archive/index.html").exists())
+            self.assertTrue((root / "dist/terms/index.html").exists())
+            self.assertFalse((root / "dist/archive/index.html").exists())
+            glossary = (root / "dist/terms/index.html").read_text(encoding="utf-8")
+            self.assertIn("주가지수", glossary)
+            self.assertIn("한국은행", glossary)
             self.assertTrue((root / "dist/feed.xml").exists())
 
     def test_escapes_untrusted_headline(self):

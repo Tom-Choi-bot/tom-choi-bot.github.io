@@ -14,7 +14,7 @@ from xml.sax.saxutils import escape as xml_escape
 SITE_TITLE = "시장노트"
 CATEGORIES = {"경제": "economy", "주식": "stocks", "부동산": "housing"}
 NAV = [("오늘", "/"), ("경제", "/economy/"), ("주식", "/stocks/"),
-       ("부동산", "/housing/"), ("돈의 흐름", "/money-flow/"), ("지난 글", "/archive/")]
+       ("부동산", "/housing/"), ("돈의 흐름", "/money-flow/"), ("경제 용어", "/terms/")]
 
 
 def e(value: object) -> str:
@@ -42,8 +42,9 @@ def validate_post(post: dict) -> None:
             raise ValueError("cutoff/date mismatch")
     except (KeyError, TypeError, ValueError) as exc:
         raise ValueError("cutoff_at needs timezone and the post date") from exc
-    if not isinstance(post.get("headline"), str) or not post["headline"].strip():
-        raise ValueError("headline required")
+    for key, minimum in (("headline", 5), ("lead", 30)):
+        if not isinstance(post.get(key), str) or len(post[key].strip()) < minimum:
+            raise ValueError(f"post.{key} too short")
     items = post.get("items")
     if not isinstance(items, list) or not items:
         raise ValueError("at least one sourced item required")
@@ -53,9 +54,12 @@ def validate_post(post: dict) -> None:
     for item in items:
         if not isinstance(item, dict) or item.get("category") not in CATEGORIES:
             raise ValueError("invalid item category")
-        for key in ("title", "summary", "source", "published_at"):
+        for key in ("title", "summary", "context", "why_it_matters", "watch_next", "source", "published_at"):
             if not isinstance(item.get(key), str) or not item[key].strip():
                 raise ValueError(f"item.{key} required")
+        for key in ("summary", "context", "why_it_matters", "watch_next"):
+            if len(item[key].strip()) < 20:
+                raise ValueError(f"item.{key} too short")
         try:
             parsed = datetime.fromisoformat(item["published_at"])
             if parsed.tzinfo is None:
@@ -89,6 +93,26 @@ def validate_post(post: dict) -> None:
             raise ValueError("money_flow.as_of needs ISO date") from exc
 
 
+def validate_terms(terms: list[dict]) -> None:
+    """Require a substantive explanation and a direct source for each term."""
+    if not isinstance(terms, list) or not terms:
+        raise ValueError("glossary must have entries")
+    seen = set()
+    for term in terms:
+        if not isinstance(term, dict):
+            raise ValueError("invalid glossary entry")
+        for key in ("category", "term", "definition", "example", "caution", "source"):
+            if not isinstance(term.get(key), str) or not term[key].strip():
+                raise ValueError(f"glossary.{key} required")
+        if len(term["definition"].strip()) < 20 or len(term["example"].strip()) < 20:
+            raise ValueError("glossary explanation too short")
+        if not valid_url(term.get("url")):
+            raise ValueError("glossary source URL required")
+        if term["term"] in seen:
+            raise ValueError("duplicate glossary term")
+        seen.add(term["term"])
+
+
 def head(title: str, description: str, canonical: str) -> str:
     return f'''<!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
@@ -109,10 +133,11 @@ def stamp(timestamp: str) -> str:
 
 
 def item_card(item: dict) -> str:
-    why = item.get("why_it_matters", "")
-    why_html = f'<p class="why"><b>맥락 · </b>{e(why)}</p>' if why else ""
     return f'''<article class="news-card"><div class="card-top"><span class="tag">{e(item['category'])}</span><span class="published">발표 {stamp(item['published_at'])}</span></div>
-<h3>{e(item['title'])}</h3><p class="summary">{e(item['summary'])}</p>{why_html}
+<h3>{e(item['title'])}</h3><p class="summary">{e(item['summary'])}</p>
+<div class="analysis-block"><div class="analysis-label">배경과 숫자</div><p>{e(item['context'])}</p></div>
+<div class="analysis-block"><div class="analysis-label">읽는 법</div><p>{e(item['why_it_matters'])}</p></div>
+<div class="next-check"><strong>다음에 확인할 것</strong><p>{e(item['watch_next'])}</p></div>
 <a class="source" href="{e(item['url'])}" target="_blank" rel="noopener noreferrer">원문 · {e(item['source'])} <span aria-hidden="true">↗</span></a></article>'''
 
 
@@ -128,9 +153,9 @@ def brief_body(post: dict, *, home: bool = False) -> str:
     flow_html = "".join(flow_card(flow) for flow in flows) if flows else '<p class="empty-flow">오늘 확인 가능한 자금 흐름 자료가 없습니다. 오래된 수치를 오늘 수치처럼 게시하지 않습니다.</p>'
     label = "오늘의 브리핑" if home else "일일 브리핑"
     return f'''<main id="main" class="wrap"><section class="hero"><div class="eyebrow"><span class="live-dot"></span> {label} <span class="hero-date">{published} {cutoff} KST 기준</span></div>
-<h1>{e(post['headline'])}</h1><p class="hero-description">핵심만 읽고, 원문으로 확인하세요. 사실과 해석을 나누어 전합니다.</p></section>
+<h1>{e(post['headline'])}</h1><p class="hero-description">{e(post['lead'])}</p><a class="terms-prompt" href="/terms/">기사 속 용어가 낯설다면 · 경제 용어 보기 →</a></section>
 <div class="content-grid"><div class="main-column"><div class="section-heading"><h2>오늘의 소식</h2><span>{len(post['items'])}건의 확인된 소식</span></div><div class="news-list">{items}</div></div>
-<aside class="side-column" aria-label="돈의 흐름"><div class="flow-panel"><div class="panel-label">FOCUS / MONEY FLOW</div><h2>돈의 흐름</h2><p class="panel-intro">자금의 방향을 숫자의 기준일과 함께 봅니다.</p>{flow_html}</div></aside></div>
+<aside class="side-column" aria-label="돈의 흐름"><div class="flow-panel"><div class="panel-label">FOCUS / MONEY FLOW</div><h2>돈의 흐름</h2><p class="panel-intro">가격·비용·지원제도의 신호를 구분합니다. 실제 자금 유입액과 혼동하지 않습니다.</p>{flow_html}</div></aside></div>
 <div class="bottom-note">숫자에는 집계 시점이 있습니다. 기사의 발표 시각과 자료 기준일을 구분해 읽어주세요.</div></main>'''
 
 
@@ -142,6 +167,19 @@ def write_page(out: Path, slug: str, content: str) -> None:
     path = out / slug / "index.html" if slug else out / "index.html"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
+
+
+def terms_body(terms: list[dict]) -> str:
+    groups = list(dict.fromkeys(term["category"] for term in terms))
+    jumps = ''.join(f'<a href="#terms-{index}">{e(group)}</a>' for index, group in enumerate(groups))
+    sections = []
+    for index, group in enumerate(groups):
+        cards = ''.join(f'''<article class="term-card"><div class="term-kind">{e(group)}</div><h3>{e(t['term'])}</h3>
+<p class="term-definition">{e(t['definition'])}</p><div class="term-detail"><strong>이번 브리핑에서는</strong><p>{e(t['example'])}</p></div>
+<div class="term-detail caution"><strong>헷갈리기 쉬운 점</strong><p>{e(t['caution'])}</p></div>
+<a class="source" href="{e(t['url'])}" target="_blank" rel="noopener noreferrer">출처 · {e(t['source'])} ↗</a></article>''' for t in terms if t["category"] == group)
+        sections.append(f'<section class="term-section" id="terms-{index}"><h2>{e(group)}</h2><div class="terms-grid">{cards}</div></section>')
+    return f'<div class="eyebrow">ECONOMIC GLOSSARY</div><h1>경제 용어</h1><p>기사에 나온 숫자를 제대로 읽기 위한 짧은 설명입니다. 각 용어마다 실제 브리핑 예시와 원자료를 연결했습니다.</p><nav class="term-jump" aria-label="용어 분류">{jumps}</nav>' + ''.join(sections)
 
 
 def render_site(content_dir: Path, output_dir: Path, *, root_url: str) -> None:
@@ -160,6 +198,8 @@ def render_site(content_dir: Path, output_dir: Path, *, root_url: str) -> None:
     (output_dir / "assets").mkdir()
     shutil.copy2(css, output_dir / "assets/style.css")
     (output_dir / ".nojekyll").write_text("", encoding="utf-8")
+    terms = json.loads((Path(__file__).resolve().parents[1] / "data/terms.json").read_text(encoding="utf-8"))
+    validate_terms(terms)
     if posts:
         latest = posts[0]
         write_page(output_dir, "", head(latest["headline"], "경제·주식·부동산과 돈의 흐름을 출처와 함께 읽는 매일 브리핑", root_url + "/") + brief_body(latest, home=True) + foot())
@@ -167,9 +207,7 @@ def render_site(content_dir: Path, output_dir: Path, *, root_url: str) -> None:
             write_page(output_dir, post["date"], head(post["headline"], post["headline"], f"{root_url}/{post['date']}/") + brief_body(post) + foot())
     else:
         write_page(output_dir, "", head("첫 브리핑 준비 중", "시장노트가 첫 브리핑을 준비하고 있습니다", root_url + "/") + '<main id="main" class="wrap simple-page"><div class="eyebrow">MARKET NOTE</div><h1>숫자를 읽고,<br>흐름을 잇습니다.</h1><p>첫 번째 근거 있는 브리핑을 준비하고 있습니다. 출처와 자료 기준일을 함께 공개합니다.</p><a class="button" href="/method/">작성 방법 보기 ↗</a></main>' + foot())
-    archive = '<div class="eyebrow">ARCHIVE</div><h1>지난 브리핑</h1>'
-    archive += '<div class="archive-list">' + ''.join(f'<a href="/{e(p["date"])}/"><time>{e(p["date"])}</time><strong>{e(p["headline"])}</strong><span>↗</span></a>' for p in posts) + '</div>' if posts else '<p>게시된 브리핑이 아직 없습니다.</p>'
-    write_page(output_dir, "archive", simple_page("지난 글", archive, root_url, "archive"))
+    write_page(output_dir, "terms", simple_page("경제 용어", terms_body(terms), root_url, "terms"))
     for name, slug in CATEGORIES.items():
         matched = [(p, item) for p in posts for item in p["items"] if item["category"] == name]
         cards = ''.join(f'<div class="category-date"><a href="/{e(p["date"])}/">{e(p["date"])} 브리핑 →</a></div>{item_card(item)}' for p, item in matched)
