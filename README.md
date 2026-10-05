@@ -7,6 +7,7 @@
 - `content/YYYY-MM-DD.json`: 날짜별 검증 가능한 발행 원고
 - `scripts/site.py`: 표준 라이브러리만 사용하는 정적 사이트 생성기
 - `scripts/collect.py`: 공개 RSS/Atom의 *후보* 수집기 (수집 결과는 게시물이 아님)
+- `scripts/watchdog.py`: 공개 홈 화면의 당일 오전 6시 발행 여부 확인
 - `sources.json`: 사용할 공개 피드와 분류
 - `tests/`: 내용 검사, HTML 이스케이프, 피드 파서 테스트
 - `.github/workflows/pages.yml`: main에 푸시되면 테스트→빌드→Pages 배포
@@ -26,7 +27,7 @@ python3 -m http.server --directory dist 8000
 
 ## 발행
 
-평소 원고 생성은 별도의 Hermes 예약 작업에서 **매일 06:00 Asia/Seoul**에 실행합니다. 이 작업은 출처를 확인한 뒤 이 저장소에 원고를 커밋·푸시합니다. 푸시가 GitHub Actions Pages 배포를 실행합니다. 원고 생성에 GitHub Actions의 개인 토큰이나 별도 유료 LLM API 키를 저장하지 않습니다. 예약 작업이 실행되지 않거나 출처 검증에 실패하면 새 글은 발행하지 않고 기존 사이트를 보존합니다.
+평소 원고 생성은 별도의 Hermes 예약 작업에서 **매일 06:00 Asia/Seoul**에 실행합니다. 이 작업은 출처를 확인한 뒤 이 저장소에 원고를 커밋·푸시합니다. 푸시가 GitHub Actions Pages 배포를 실행합니다. **06:45 KST**에는 별도의 스크립트 예약 작업이 공개 홈 화면의 당일 브리핑을 확인하고, 누락·접속 실패 시에만 운영 채팅으로 알립니다. 원고 생성에 GitHub Actions의 개인 토큰이나 별도 유료 LLM API 키를 저장하지 않습니다. 예약 작업이 실행되지 않거나 출처 검증에 실패하면 새 글은 발행하지 않고 기존 사이트를 보존합니다.
 
 수동 재배포는 Actions의 `workflow_dispatch`를 사용합니다. 개인 토큰은 저장소 파일·Actions secrets·원고에 넣지 않습니다.
 
