@@ -12,7 +12,15 @@ def check_home(html: str, expected_date: str) -> str:
     match = re.search(r'<span\s+class="hero-date"[^>]*>([^<]+)</span>', html)
     actual = unescape(match.group(1)).strip() if match else "없음"
     expected = f"{expected_date} 06:00 KST 기준"
-    return "" if actual == expected else f"시장노트 {expected_date} 06시 브리핑 미발행: 홈 화면 표시값={actual}"
+    if actual != expected:
+        return f"시장노트 {expected_date} 06시 브리핑 미발행: 홈 화면 표시값={actual}"
+    required_sections = ("us-market", "kr-market", "global")
+    missing = [section for section in required_sections
+               if not re.search(r'<section\s+class="brief-section"\s+id="' + section + r'"', html)]
+    item_count = len(re.findall(r'<article\s+class="news-card"', html))
+    if missing or item_count < 4:
+        return f"시장노트 {expected_date} 섹션별 브리핑 미완성: 소식 {item_count}건, 누락 섹션 {', '.join(missing)}"
+    return ""
 
 
 def main() -> None:

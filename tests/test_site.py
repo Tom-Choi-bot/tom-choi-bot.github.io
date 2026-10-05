@@ -1,6 +1,7 @@
 import json
 import tempfile
 import unittest
+from copy import deepcopy
 from pathlib import Path
 
 from scripts.site import render_site, validate_post, validate_terms
@@ -52,9 +53,111 @@ class SiteTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_post(self.post)
 
+    def test_accepts_older_date_only_release_without_invented_time(self):
+        item = self.post["items"][0]
+        item.pop("published_at")
+        item["published_on"] = "2026-10-04"
+        validate_post(self.post)
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            content = root / "content"
+            content.mkdir()
+            (content / "2026-10-05.json").write_text(json.dumps(self.post), encoding="utf-8")
+            render_site(content, root / "dist", root_url="https://tom-choi-bot.github.io")
+            home = (root / "dist/index.html").read_text(encoding="utf-8")
+            self.assertIn("발표 2026-10-04 (시각 미공개)", home)
+
+    def test_rejects_date_only_release_on_cutoff_day(self):
+        item = self.post["items"][0]
+        item.pop("published_at")
+        item["published_on"] = "2026-10-05"
+        with self.assertRaises(ValueError):
+            validate_post(self.post)
+
+    def test_converts_release_timestamp_to_korea_time(self):
+        self.post["items"][0]["published_at"] = "2026-10-04T18:00:00+00:00"
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            content = root / "content"
+            content.mkdir()
+            (content / "2026-10-05.json").write_text(json.dumps(self.post), encoding="utf-8")
+            render_site(content, root / "dist", root_url="https://tom-choi-bot.github.io")
+            home = (root / "dist/index.html").read_text(encoding="utf-8")
+            self.assertIn("발표 2026-10-05 03:00 KST", home)
+
     def test_rejects_unsourced_glossary_entry(self):
         with self.assertRaises(ValueError):
             validate_terms([{"term": "금리", "definition": "설명", "example": "예시", "source": "기관", "url": ""}])
+
+    def sectioned_post(self):
+        post = deepcopy(self.post)
+        post["brief_type"] = "sectioned"
+        post["items"] = []
+        for section, category, suffix in [
+            ("미국 시장", "경제", "usa"), ("미국 시장", "주식", "stocks"),
+            ("한국 시장", "주식", "korea"), ("글로벌 변수", "경제", "global"),
+            ("부동산", "부동산", "housing"),
+        ]:
+            item = deepcopy(self.post["items"][0])
+            item.update(section=section, category=category, title=f"{section} 분석 {suffix}", url=f"https://example.org/{suffix}")
+            post["items"].append(item)
+        post["calendar"] = [{
+            "at": "2026-10-08T03:00:00+09:00", "event": "9월 FOMC 의사록 공개",
+            "watch": "연준의 금리 판단 근거를 원문에서 확인합니다.",
+            "source": "연준 발표 일정", "url": "https://example.org/calendar",
+        }]
+        return post
+
+    def test_sectioned_brief_renders_editorial_sections_and_sourced_schedule(self):
+        post = self.sectioned_post()
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            content = root / "content"
+            content.mkdir()
+            (content / "2026-10-05.json").write_text(json.dumps(post), encoding="utf-8")
+            render_site(content, root / "dist", root_url="https://tom-choi-bot.github.io")
+            home = (root / "dist/index.html").read_text(encoding="utf-8")
+            for label, slug in [("미국 시장", "us-market"), ("한국 시장", "kr-market"), ("글로벌 변수", "global"), ("부동산", "housing")]:
+                self.assertIn(f'id="{slug}"', home)
+                self.assertIn(f'<h2>{label}</h2>', home)
+            self.assertIn('href="#us-market"', home)
+            self.assertIn("오늘 한눈에 보기", home)
+            self.assertIn("이번 주 일정", home)
+            self.assertIn("2026-10-08 03:00 KST", home)
+            self.assertIn('https://example.org/calendar', home)
+            self.assertIn('href="/terms/"', home)
+
+    def test_sectioned_brief_rejects_missing_market_region(self):
+        post = self.sectioned_post()
+        post["items"] = [i for i in post["items"] if i["section"] != "글로벌 변수"]
+        with self.assertRaises(ValueError):
+            validate_post(post)
+
+    def test_calendar_rejects_missing_source_and_past_time(self):
+        post = self.sectioned_post()
+        post["calendar"][0]["url"] = ""
+        with self.assertRaises(ValueError):
+            validate_post(post)
+        post["calendar"][0]["url"] = "https://example.org/calendar"
+        post["calendar"][0]["at"] = "2026-10-04T03:00:00+09:00"
+        with self.assertRaises(ValueError):
+            validate_post(post)
+
+    def test_revision_timestamp_is_displayed_without_changing_source_cutoff(self):
+        post = self.sectioned_post()
+        post["updated_at"] = "2026-10-05T08:30:00+09:00"
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            content = root / "content"
+            content.mkdir()
+            (content / "2026-10-05.json").write_text(json.dumps(post), encoding="utf-8")
+            render_site(content, root / "dist", root_url="https://tom-choi-bot.github.io")
+            home = (root / "dist/index.html").read_text(encoding="utf-8")
+            self.assertIn("06:00 KST 기준", home)
+            self.assertIn("08:30 KST 보강", home)
+        post["updated_at"] = "2026-10-05T05:00:00+09:00"
+        with self.assertRaises(ValueError):
+            validate_post(post)
 
     def test_renders_mobile_home_sections_glossary_and_rss(self):
         with tempfile.TemporaryDirectory() as temp:

@@ -6,13 +6,14 @@ import html
 import json
 import re
 import shutil
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import urlsplit
 from xml.sax.saxutils import escape as xml_escape
 
 SITE_TITLE = "시장노트"
 CATEGORIES = {"경제": "economy", "주식": "stocks", "부동산": "housing"}
+SECTIONS = {"미국 시장": "us-market", "한국 시장": "kr-market", "글로벌 변수": "global", "부동산": "housing"}
 NAV = [("오늘", "/"), ("경제", "/economy/"), ("주식", "/stocks/"),
        ("부동산", "/housing/"), ("돈의 흐름", "/money-flow/"), ("경제 용어", "/terms/")]
 
@@ -42,6 +43,13 @@ def validate_post(post: dict) -> None:
             raise ValueError("cutoff/date mismatch")
     except (KeyError, TypeError, ValueError) as exc:
         raise ValueError("cutoff_at needs timezone and the post date") from exc
+    if "updated_at" in post:
+        try:
+            updated = datetime.fromisoformat(post["updated_at"])
+            if updated.tzinfo is None or updated <= cutoff or updated.astimezone(cutoff.tzinfo).date() != cutoff.date():
+                raise ValueError("updated_at must follow cutoff on the post date")
+        except (TypeError, ValueError) as exc:
+            raise ValueError("updated_at needs timezone and must follow cutoff on post date") from exc
     for key, minimum in (("headline", 5), ("lead", 30)):
         if not isinstance(post.get(key), str) or len(post[key].strip()) < minimum:
             raise ValueError(f"post.{key} too short")
@@ -54,20 +62,27 @@ def validate_post(post: dict) -> None:
     for item in items:
         if not isinstance(item, dict) or item.get("category") not in CATEGORIES:
             raise ValueError("invalid item category")
-        for key in ("title", "summary", "context", "why_it_matters", "watch_next", "source", "published_at"):
+        for key in ("title", "summary", "context", "why_it_matters", "watch_next", "source"):
             if not isinstance(item.get(key), str) or not item[key].strip():
                 raise ValueError(f"item.{key} required")
         for key in ("summary", "context", "why_it_matters", "watch_next"):
             if len(item[key].strip()) < 20:
                 raise ValueError(f"item.{key} too short")
-        try:
-            parsed = datetime.fromisoformat(item["published_at"])
-            if parsed.tzinfo is None:
-                raise ValueError("timezone missing")
-            if parsed > cutoff:
-                raise ValueError("item published after briefing cutoff")
-        except (TypeError, ValueError) as exc:
-            raise ValueError("item.published_at needs timezone") from exc
+        if ("published_at" in item) == ("published_on" in item):
+            raise ValueError("exactly one of published_at or published_on required")
+        if "published_at" in item:
+            try:
+                parsed = datetime.fromisoformat(item["published_at"])
+                if parsed.tzinfo is None or parsed > cutoff:
+                    raise ValueError("missing timezone or published after cutoff")
+            except (TypeError, ValueError) as exc:
+                raise ValueError("item.published_at needs timezone and must precede cutoff") from exc
+        else:
+            try:
+                if date.fromisoformat(item["published_on"]) >= cutoff.date():
+                    raise ValueError("date-only release could be after cutoff")
+            except (TypeError, ValueError) as exc:
+                raise ValueError("item.published_on must precede cutoff date") from exc
         url = item.get("url")
         if not valid_url(url):
             raise ValueError("item.url must be a public http(s) URL")
@@ -91,6 +106,30 @@ def validate_post(post: dict) -> None:
                 raise ValueError("money_flow date after cutoff")
         except ValueError as exc:
             raise ValueError("money_flow.as_of needs ISO date") from exc
+    if post.get("brief_type") == "sectioned":
+        if len(items) < 4 or not {"미국 시장", "한국 시장", "글로벌 변수"}.issubset({i.get("section") for i in items}):
+            raise ValueError("sectioned brief needs four items across US, Korea and global sections")
+        if any(i.get("section") not in SECTIONS for i in items):
+            raise ValueError("invalid item section")
+    elif post.get("brief_type") is not None:
+        raise ValueError("invalid brief_type")
+    calendar = post.get("calendar", [])
+    if not isinstance(calendar, list):
+        raise ValueError("calendar must be a list")
+    for event in calendar:
+        if not isinstance(event, dict):
+            raise ValueError("invalid calendar event")
+        for key in ("at", "event", "watch", "source"):
+            if not isinstance(event.get(key), str) or not event[key].strip():
+                raise ValueError(f"calendar.{key} required")
+        if len(event["watch"].strip()) < 20 or not valid_url(event.get("url")):
+            raise ValueError("calendar needs sourced context and URL")
+        try:
+            when = datetime.fromisoformat(event["at"])
+            if when.tzinfo is None or when <= cutoff:
+                raise ValueError("calendar event must follow cutoff with timezone")
+        except (TypeError, ValueError) as exc:
+            raise ValueError("calendar.at must follow cutoff with timezone") from exc
 
 
 def validate_terms(terms: list[dict]) -> None:
@@ -129,11 +168,13 @@ def foot() -> str:
 
 
 def stamp(timestamp: str) -> str:
-    return e(timestamp[:16].replace("T", " "))
+    kst = datetime.fromisoformat(timestamp).astimezone(timezone(timedelta(hours=9)))
+    return e(kst.strftime("%Y-%m-%d %H:%M KST"))
 
 
 def item_card(item: dict) -> str:
-    return f'''<article class="news-card"><div class="card-top"><span class="tag">{e(item['category'])}</span><span class="published">발표 {stamp(item['published_at'])}</span></div>
+    published = stamp(item["published_at"]) if "published_at" in item else e(item["published_on"] + " (시각 미공개)")
+    return f'''<article class="news-card"><div class="card-top"><span class="tag">{e(item['category'])}</span><span class="published">발표 {published}</span></div>
 <h3>{e(item['title'])}</h3><p class="summary">{e(item['summary'])}</p>
 <div class="analysis-block"><div class="analysis-label">배경과 숫자</div><p>{e(item['context'])}</p></div>
 <div class="analysis-block"><div class="analysis-label">읽는 법</div><p>{e(item['why_it_matters'])}</p></div>
@@ -152,6 +193,30 @@ def brief_body(post: dict, *, home: bool = False) -> str:
     flows = post.get("money_flow", [])
     flow_html = "".join(flow_card(flow) for flow in flows) if flows else '<p class="empty-flow">오늘 확인 가능한 자금 흐름 자료가 없습니다. 오래된 수치를 오늘 수치처럼 게시하지 않습니다.</p>'
     label = "오늘의 브리핑" if home else "일일 브리핑"
+    if post.get("brief_type") == "sectioned":
+        revision = f'<span class="hero-revision">{stamp(post["updated_at"])} 보강 · 06:00 이전 자료로 재편집</span>' if "updated_at" in post else ""
+        highlights = []
+        for section in ("미국 시장", "한국 시장", "글로벌 변수"):
+            item = next(i for i in post["items"] if i["section"] == section)
+            highlights.append(f'<li><span>{e(section)}</span><a href="#{SECTIONS[section]}">{e(item["title"])}</a></li>')
+        nav = ''.join(f'<a href="#{slug}">{e(section)}</a>' for section, slug in SECTIONS.items() if any(i["section"] == section for i in post["items"]))
+        nav += '<a href="#money-flow">돈의 흐름</a>'
+        if post.get("calendar"):
+            nav += '<a href="#calendar">이번 주 일정</a>'
+        sections = []
+        for section, slug in SECTIONS.items():
+            group = [item for item in post["items"] if item["section"] == section]
+            if group:
+                sections.append(f'<section class="brief-section" id="{slug}"><div class="section-heading"><h2>{e(section)}</h2><span>{len(group)}건의 확인된 소식</span></div><div class="news-list">{"".join(item_card(i) for i in group)}</div></section>')
+        events = ''.join(f'<li><time datetime="{e(ev["at"])}">{stamp(ev["at"])}</time><div><strong>{e(ev["event"])}</strong><p>{e(ev["watch"])}</p><a href="{e(ev["url"])}" target="_blank" rel="noopener noreferrer">일정 원문 · {e(ev["source"])} ↗</a></div></li>' for ev in post.get("calendar", []))
+        calendar_html = f'<section class="calendar-panel" id="calendar"><h2>이번 주 일정</h2><ol>{events}</ol></section>' if events else ''
+        return f'''<main id="main" class="wrap"><section class="hero"><div class="eyebrow"><span class="live-dot"></span> {label} <span class="hero-date">{published} {cutoff} KST 기준</span></div>
+<h1>{e(post['headline'])}</h1><p class="hero-description">{e(post['lead'])}</p>{revision}<a class="terms-prompt" href="/terms/">기사 속 용어가 낯설다면 · 경제 용어 보기 →</a></section>
+<section class="at-a-glance" aria-label="오늘 한눈에 보기"><div class="eyebrow">THE BRIEF</div><h2>오늘 한눈에 보기</h2><ol>{''.join(highlights)}</ol></section>
+<nav class="brief-jump" aria-label="브리핑 섹션">{nav}</nav>
+<div class="content-grid"><div class="main-column">{''.join(sections)}</div>
+<aside class="side-column" aria-label="돈의 흐름"><div class="flow-panel" id="money-flow"><div class="panel-label">FOCUS / MONEY FLOW</div><h2>돈의 흐름</h2><p class="panel-intro">통계의 대상 기간과 자금 유입액을 구분합니다.</p>{flow_html}</div></aside></div>
+{calendar_html}<div class="bottom-note">06:00 KST 이후 발표된 자료는 이 글에 소급해 넣지 않습니다. 발표 시각과 실제 집계 기간은 다를 수 있습니다.</div></main>'''
     return f'''<main id="main" class="wrap"><section class="hero"><div class="eyebrow"><span class="live-dot"></span> {label} <span class="hero-date">{published} {cutoff} KST 기준</span></div>
 <h1>{e(post['headline'])}</h1><p class="hero-description">{e(post['lead'])}</p><a class="terms-prompt" href="/terms/">기사 속 용어가 낯설다면 · 경제 용어 보기 →</a></section>
 <div class="content-grid"><div class="main-column"><div class="section-heading"><h2>오늘의 소식</h2><span>{len(post['items'])}건의 확인된 소식</span></div><div class="news-list">{items}</div></div>

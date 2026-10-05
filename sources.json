@@ -13,5 +13,15 @@
     "name": "국토교통부 보도자료",
     "category": "부동산",
     "url": "https://www.molit.go.kr/dev/board/board_rss.jsp?rss_id=NEWS"
+  },
+  {
+    "name": "미국 에너지정보청 Today in Energy",
+    "category": "경제",
+    "url": "https://www.eia.gov/rss/todayinenergy.xml"
+  },
+  {
+    "name": "미 연준 통화정책",
+    "category": "경제",
+    "url": "https://www.federalreserve.gov/feeds/press_monetary.xml"
   }
 ]
