@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import html
 import json
 import re
@@ -12,6 +13,7 @@ from urllib.parse import urlsplit
 from xml.sax.saxutils import escape as xml_escape
 
 SITE_TITLE = "시장노트"
+CSS_VERSION = hashlib.sha256((Path(__file__).resolve().parents[1] / "assets/style.css").read_bytes()).hexdigest()[:12]
 CATEGORIES = {"경제": "economy", "주식": "stocks", "부동산": "housing"}
 SECTIONS = {"미국 시장": "us-market", "한국 시장": "kr-market", "글로벌 변수": "global", "부동산": "housing"}
 NAV = [("오늘", "/"), ("경제", "/economy/"), ("주식", "/stocks/"),
@@ -157,7 +159,7 @@ def head(title: str, description: str, canonical: str) -> str:
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#f7f6f2"><meta name="description" content="{e(description)}">
 <link rel="canonical" href="{e(canonical)}"><link rel="alternate" type="application/rss+xml" title="시장노트 RSS" href="/feed.xml">
-<link rel="stylesheet" href="/assets/style.css"><title>{e(title)} · 시장노트</title></head><body>
+<link rel="stylesheet" href="/assets/style.css?v={CSS_VERSION}"><title>{e(title)} · 시장노트</title></head><body>
 <a class="skip" href="#main">본문으로 건너뛰기</a>
 <header class="site-header"><div class="wrap header-inner"><a class="brand" href="/" aria-label="시장노트 첫 화면"><span class="brand-mark">◉</span> 시장노트</a><span class="header-caption">숫자와 출처로 읽는 오늘</span></div>
 <nav class="nav wrap" aria-label="주요 메뉴">{''.join(f'<a href="{path}">{e(name)}</a>' for name, path in NAV)}</nav></header>'''

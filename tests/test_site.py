@@ -159,6 +159,16 @@ class SiteTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_post(post)
 
+    def test_renders_versioned_stylesheet_to_avoid_stale_css(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            content = root / "content"
+            content.mkdir()
+            (content / "2026-10-05.json").write_text(json.dumps(self.post), encoding="utf-8")
+            render_site(content, root / "dist", root_url="https://tom-choi-bot.github.io")
+            home = (root / "dist/index.html").read_text(encoding="utf-8")
+            self.assertRegex(home, r'href="/assets/style\.css\?v=[0-9a-f]{12}"')
+
     def test_renders_mobile_home_sections_glossary_and_rss(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
