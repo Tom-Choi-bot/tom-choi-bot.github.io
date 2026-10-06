@@ -5,6 +5,7 @@ import argparse
 import hashlib
 import html
 import json
+import math
 import re
 import shutil
 from datetime import date, datetime, timedelta, timezone
@@ -117,6 +118,35 @@ def validate_post(post: dict) -> None:
             raise ValueError("each sectioned item needs a substantive causal mechanism")
     elif post.get("brief_type") is not None:
         raise ValueError("invalid brief_type")
+    visuals = post.get("visuals", [])
+    if not isinstance(visuals, list) or len(visuals) > 3:
+        raise ValueError("visuals must be at most three comparisons")
+    for visual in visuals:
+        if not isinstance(visual, dict):
+            raise ValueError("invalid visual comparison")
+        for key in ("title", "unit", "caption", "source", "as_of"):
+            if not isinstance(visual.get(key), str) or not visual[key].strip():
+                raise ValueError(f"visual.{key} required")
+        if not valid_url(visual.get("url")):
+            raise ValueError("visual.url required")
+        try:
+            if date.fromisoformat(visual["as_of"]) > cutoff.date():
+                raise ValueError("visual data after cutoff")
+        except (TypeError, ValueError) as exc:
+            raise ValueError("visual.as_of needs an earlier ISO date") from exc
+        points = visual.get("points")
+        if not isinstance(points, list) or not 2 <= len(points) <= 4:
+            raise ValueError("visual.points needs two to four values")
+        labels = set()
+        for point in points:
+            if not isinstance(point, dict) or not isinstance(point.get("label"), str) or not point["label"].strip():
+                raise ValueError("visual point label required")
+            value = point.get("value")
+            if isinstance(value, bool) or not isinstance(value, (float, int)) or not math.isfinite(value) or value <= 0:
+                raise ValueError("visual point must be a positive finite number")
+            if point["label"] in labels:
+                raise ValueError("duplicate visual point")
+            labels.add(point["label"])
     calendar = post.get("calendar", [])
     if not isinstance(calendar, list):
         raise ValueError("calendar must be a list")
@@ -194,6 +224,19 @@ def flow_card(flow: dict) -> str:
     return f'''<article class="flow-card"><div class="flow-label">{e(flow['label'])}</div><p>{e(flow['text'])}</p><div class="flow-meta">자료 기준 {e(flow['as_of'])} · <a href="{e(flow['url'])}" target="_blank" rel="noopener noreferrer">{e(flow['source'])} ↗</a></div></article>'''
 
 
+def visual_card(visual: dict) -> str:
+    """Render source-backed zero-baseline bars without a client-side library."""
+    maximum = max(point["value"] for point in visual["points"])
+    unit = visual["unit"]
+    rows = []
+    for point in visual["points"]:
+        value = f'{point["value"]:,.2f}'.rstrip("0").rstrip(".")
+        label = point["label"]
+        width = point["value"] / maximum * 100
+        rows.append(f'<li aria-label="{e(label)} {e(value)}{e(unit)}"><div class="visual-row"><span>{e(label)}</span><strong>{e(value)}<small>{e(unit)}</small></strong></div><div class="visual-track"><span style="width:{width:.1f}%"></span></div></li>')
+    return f'''<article class="visual-card"><h3>{e(visual['title'])}</h3><ol class="visual-bars">{''.join(rows)}</ol><p class="visual-caption">{e(visual['caption'])}</p><p class="visual-source">자료 기준 {e(visual['as_of'])} · <a href="{e(visual['url'])}" target="_blank" rel="noopener noreferrer">{e(visual['source'])} ↗</a></p></article>'''
+
+
 def brief_body(post: dict, *, home: bool = False) -> str:
     published = e(post["date"])
     cutoff = e(post["cutoff_at"][11:16])
@@ -218,9 +261,12 @@ def brief_body(post: dict, *, home: bool = False) -> str:
                 sections.append(f'<section class="brief-section" id="{slug}"><div class="section-heading"><h2>{e(section)}</h2><span>{len(group)}건의 확인된 소식</span></div><div class="news-list">{"".join(item_card(i) for i in group)}</div></section>')
         events = ''.join(f'<li><time datetime="{e(ev["at"])}">{stamp(ev["at"])}</time><div><strong>{e(ev["event"])}</strong><p>{e(ev["watch"])}</p><a href="{e(ev["url"])}" target="_blank" rel="noopener noreferrer">일정 원문 · {e(ev["source"])} ↗</a></div></li>' for ev in post.get("calendar", []))
         calendar_html = f'<section class="calendar-panel" id="calendar"><h2>이번 주 일정</h2><ol>{events}</ol></section>' if events else ''
-        return f'''<main id="main" class="wrap"><section class="hero"><div class="eyebrow"><span class="live-dot"></span> {label} <span class="hero-date">{published} {cutoff} KST 기준</span></div>
-<h1>{e(post['headline'])}</h1><p class="hero-description">{e(post['lead'])}</p>{revision}<a class="terms-prompt" href="/terms/">기사 속 용어가 낯설다면 · 경제 용어 보기 →</a></section>
-<section class="at-a-glance" aria-label="오늘 한눈에 보기"><div class="eyebrow">THE BRIEF</div><h2>오늘 한눈에 보기</h2><ol>{''.join(highlights)}</ol></section>
+        visuals = post.get("visuals", [])
+        overview = (f'<section class="visual-dashboard" aria-label="숫자로 한눈에 보는 시장"><div class="visual-heading"><div class="eyebrow">THE SIGNALS</div><h2>숫자로 한눈에 보기</h2><p>서로 다른 단위와 시점을 섞지 않은 출처별 비교 · 06:00 KST 이전 자료</p></div><div class="visual-grid">{"".join(visual_card(v) for v in visuals)}</div><details class="visual-context"><summary>오늘의 시장 맥락 읽기</summary><p>{e(post["lead"])}</p></details></section>' if visuals else f'<section class="at-a-glance" aria-label="오늘 한눈에 보기"><div class="eyebrow">THE BRIEF</div><h2>오늘 한눈에 보기</h2><ol>{"".join(highlights)}</ol></section>')
+        hero_description = '' if visuals else f'<p class="hero-description">{e(post["lead"])}</p>'
+        return f'''<main id="main" class="wrap"><section class="hero{' hero-with-visual' if visuals else ''}"><div class="eyebrow"><span class="live-dot"></span> {label} <span class="hero-date">{published} {cutoff} KST 기준</span></div>
+<h1>{e(post['headline'])}</h1>{hero_description}{revision}<a class="terms-prompt" href="/terms/">기사 속 용어가 낯설다면 · 경제 용어 보기 →</a></section>
+{overview}
 <nav class="brief-jump" aria-label="브리핑 섹션">{nav}</nav>
 <div class="content-grid"><div class="main-column">{''.join(sections)}</div>
 <aside class="side-column" aria-label="돈의 흐름"><div class="flow-panel" id="money-flow"><div class="panel-label">FOCUS / MONEY FLOW</div><h2>돈의 흐름</h2><p class="panel-intro">통계의 대상 기간과 자금 유입액을 구분합니다.</p>{flow_html}</div></aside></div>

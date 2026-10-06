@@ -99,6 +99,32 @@
       "url": "https://www.federalreserve.gov/releases/h15/"
     }
   ],
+  "visuals": [
+    {
+      "title": "9월 수출, 반도체가 차지한 몫",
+      "unit": "억 달러",
+      "as_of": "2026-09-30",
+      "caption": "9월 월간 통계. 반도체는 전체 수출에 포함됩니다. 오늘 주식시장 자금 유입액이 아닙니다.",
+      "source": "산업통상부 9월 수출입 동향",
+      "url": "https://www.motir.go.kr/kor/article/ATCL3f49a5a8c/172254/view?mno=&pageIndex=1",
+      "points": [
+        {"label": "전체 수출", "value": 1209.4},
+        {"label": "반도체", "value": 603.0}
+      ]
+    },
+    {
+      "title": "3분기 브렌트유 선물의 두 관측점",
+      "unit": "달러/배럴",
+      "as_of": "2026-09-15",
+      "caption": "7월 1일과 9월 15일 값. 9월 15일은 EIA가 회고한 분기 고점으로, 오늘 유가가 아닙니다.",
+      "source": "미 에너지정보청(EIA) Today in Energy",
+      "url": "https://www.eia.gov/todayinenergy/detail.php?id=68245",
+      "points": [
+        {"label": "7월 1일", "value": 72},
+        {"label": "9월 15일", "value": 109}
+      ]
+    }
+  ],
   "brief_type": "sectioned",
   "calendar": [
     {
@@ -109,5 +135,5 @@
       "url": "https://www.federalreserve.gov/newsevents/2026-october.htm"
     }
   ],
-  "updated_at": "2026-10-06T08:10:18+09:00"
+  "updated_at": "2026-10-06T19:47:43+09:00"
 }

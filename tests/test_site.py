@@ -141,6 +141,57 @@ class SiteTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_post(post)
 
+    def test_sourced_visual_comparison_renders_glanceable_bars_and_fallback(self):
+        post = self.sectioned_post()
+        post["visuals"] = [{
+            "title": "수출액 비교", "unit": "억 달러", "as_of": "2026-09-30",
+            "caption": "9월 통계. 반도체는 전체 수출에 포함됩니다. 오늘 시세가 아닙니다.",
+            "source": "산업통상부", "url": "https://example.org/export",
+            "points": [{"label": "전체 수출", "value": 1209.4}, {"label": "반도체", "value": 603}],
+        }]
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            content = root / "content"
+            content.mkdir()
+            (content / "2026-10-05.json").write_text(json.dumps(post), encoding="utf-8")
+            render_site(content, root / "dist", root_url="https://tom-choi-bot.github.io")
+            home = (root / "dist/index.html").read_text(encoding="utf-8")
+            self.assertIn('class="visual-dashboard"', home)
+            self.assertIn('<summary>오늘의 시장 맥락 읽기</summary>', home)
+            self.assertNotIn('class="hero-description"', home)
+            self.assertIn("1,209.4", home)
+            self.assertIn("603", home)
+            self.assertIn('style="width:49.9%"', home)
+            self.assertIn("자료 기준 2026-09-30", home)
+            self.assertIn('href="https://example.org/export"', home)
+            self.assertIn("오늘 시세가 아닙니다", home)
+            self.assertIn('aria-label="전체 수출 1,209.4억 달러"', home)
+            self.assertIn("돈의 흐름", home)
+            self.assertIn("작동 원리", home)
+            self.assertIn('class="visual-dashboard"', (root / "dist/2026-10-05/index.html").read_text(encoding="utf-8"))
+            post.pop("visuals")
+            (content / "2026-10-05.json").write_text(json.dumps(post), encoding="utf-8")
+            render_site(content, root / "fallback", root_url="https://tom-choi-bot.github.io")
+            self.assertIn("오늘 한눈에 보기", (root / "fallback/index.html").read_text(encoding="utf-8"))
+
+    def test_visuals_reject_unsourced_future_and_invalid_numbers(self):
+        post = self.sectioned_post()
+        visual = {"title": "비교", "unit": "%", "caption": "과거 관측치입니다.",
+                  "as_of": "2026-10-04", "source": "공식 발표", "url": "https://example.org/chart",
+                  "points": [{"label": "첫째", "value": 5.2}, {"label": "둘째", "value": 4.8}]}
+        post["visuals"] = [visual]
+        validate_post(post)
+        for bad in (float("nan"), -1, 0, True):
+            broken = deepcopy(post)
+            broken["visuals"][0]["points"][0]["value"] = bad
+            with self.subTest(value=bad), self.assertRaises(ValueError):
+                validate_post(broken)
+        for key, value in (("url", ""), ("as_of", "2026-10-06"), ("source", "")):
+            broken = deepcopy(post)
+            broken["visuals"][0][key] = value
+            with self.subTest(field=key), self.assertRaises(ValueError):
+                validate_post(broken)
+
     def test_sectioned_brief_rejects_missing_market_region(self):
         post = self.sectioned_post()
         post["items"] = [i for i in post["items"] if i["section"] != "글로벌 변수"]
