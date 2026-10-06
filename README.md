@@ -8,6 +8,8 @@
 - `data/terms.json`: 출처·예시·주의점이 있는 경제 용어 카드
 - `scripts/site.py`: 표준 라이브러리만 사용하는 정적 사이트 생성기
 - `scripts/collect.py`: 공개 RSS/Atom의 *후보* 수집기 (수집 결과는 게시물이 아님)
+- `scripts/fetch_trends.py`: 미 재무부 금리 XML·EIA 브렌트 현물 JSON API에서 날짜별 관측치 수집
+- `data/trend-raw/YYYY-MM-DD.json`: 기사별 실제 API 응답에서 추린 관측일·값·원자료 URL 스냅샷
 - `scripts/watchdog.py`: 공개 홈 화면의 당일 오전 6시 발행 여부 확인
 - `sources.json`: 사용할 공개 피드와 분류
 - `tests/`: 내용 검사, HTML 이스케이프, 피드 파서 테스트
@@ -18,11 +20,12 @@
 ```sh
 python3 -m unittest discover -s tests -v
 python3 scripts/collect.py --sources sources.json --output data/inbox.json
+python3 scripts/fetch_trends.py --brief-date YYYY-MM-DD --output data/trend-raw/YYYY-MM-DD.json
 python3 scripts/site.py --content content --output dist
 python3 -m http.server --directory dist 8000
 ```
 
-게시 전 `cutoff_at`(그날 06:00 KST)을 지정합니다. 섹션형 원고(`brief_type: "sectioned"`)는 미국 시장·한국 시장·글로벌 변수에 걸친 근거 있는 소식 4건 이상을 요구하며, 확인 가능한 부동산 소식은 별도 섹션으로 싣습니다. 검증된 동단위 비교 숫자가 있으면 `visuals`에 원문·관측일·단위·주의문을 붙인 2~4개 값의 막대 비교를 1~2개 넣어 긴 글 전에 보여줍니다. 비교할 만한 수치가 없으면 도표를 만들지 않고 텍스트 개요를 보여줍니다. 각 항목은 **확인된 정보** `summary`, **숫자와 맥락** `context`, **작동 원리** `mechanism`(무슨 경로로 영향이 전해지는지), **인사이트·한계** `why_it_matters`, 후속 확인점 `watch_next`를 나눕니다. 원리를 결과의 확정으로 오해하지 않도록 반대 조건과 시차도 적습니다. 정확한 공표 시각을 확인할 수 있으면 `published_at`(타임존 포함), 날짜만 확인할 수 있으면 *기준일 이전 날짜에 한해* `published_on`을 사용합니다. 돈의 흐름에는 별도의 자료 기준일 `as_of`, 일정에는 출처와 현지·KST 시각을 둡니다. 6시 이후 편집 보강은 `updated_at`으로 표시하며, 6시 이후 처음 나온 자료를 과거 시점으로 소급하지 않습니다. 원문을 복제하지 않고 출처를 직접 연결합니다.
+게시 전 `cutoff_at`(그날 06:00 KST)을 지정합니다. 섹션형 원고(`brief_type: "sectioned"`)는 미국 시장·한국 시장·글로벌 변수에 걸친 근거 있는 소식 4건 이상을 요구하며, 확인 가능한 부동산 소식은 별도 섹션으로 싣습니다. **추이**는 검증된 여러 날짜의 API 원자료를 `trends`에 넣어 선 그래프로, **전체와 부분의 크기**는 같은 단위의 `visuals` 막대 비교로 표시합니다. 각 그래프에 원문·마지막 관측일·단위·시차·해석의 한계를 붙이고, 선 그래프에는 관측치 표도 제공합니다. 비교할 만한 자료가 없으면 도표를 만들지 않습니다. 각 항목은 **확인된 정보** `summary`, **숫자와 맥락** `context`, **작동 원리** `mechanism`(무슨 경로로 영향이 전해지는지), **인사이트·한계** `why_it_matters`, 후속 확인점 `watch_next`를 나눕니다. 원리를 결과의 확정으로 오해하지 않도록 반대 조건과 시차도 적습니다. 정확한 공표 시각을 확인할 수 있으면 `published_at`(타임존 포함), 날짜만 확인할 수 있으면 *기준일 이전 날짜에 한해* `published_on`을 사용합니다. 돈의 흐름에는 별도의 자료 기준일 `as_of`, 일정에는 출처와 현지·KST 시각을 둡니다. 6시 이후 편집 보강은 `updated_at`으로 표시하며, 6시 이후 처음 나온 자료를 과거 시점으로 소급하지 않습니다. 원문을 복제하지 않고 출처를 직접 연결합니다.
 
 첫 게시물(2026-10-05)은 실제 오전 6시에 발행된 글이 아니라, 요청에 따라 **오전 6시까지 발표된 자료만 사용해 나중에 재구성한 시연본**입니다. 이후 발행물은 실행 당시 확인 가능한 자료를 사용합니다.
 

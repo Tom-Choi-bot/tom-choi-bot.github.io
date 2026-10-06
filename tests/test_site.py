@@ -174,6 +174,53 @@ class SiteTests(unittest.TestCase):
             render_site(content, root / "fallback", root_url="https://tom-choi-bot.github.io")
             self.assertIn("오늘 한눈에 보기", (root / "fallback/index.html").read_text(encoding="utf-8"))
 
+    def test_renders_dated_trend_with_readable_data_table(self):
+        post = self.sectioned_post()
+        post["trends"] = [{
+            "title": "미 국채 10년물 추이", "unit": "%", "as_of": "2026-09-08",
+            "retrieved_at": "2026-10-05T08:30:00+09:00",
+            "caption": "영업일의 수익률 관측치. 오늘 시세가 아닙니다.",
+            "insight": "이 기간에는 4.8%에서 5.3%로 올랐지만 원인은 단정할 수 없습니다.",
+            "source": "미 재무부", "url": "https://home.treasury.gov/example",
+            "points": [{"date": f"2026-09-{d:02d}", "value": v} for d, v in
+                       [(1, 4.8), (2, 4.9), (3, 5.0), (4, 5.1), (7, 5.2), (8, 5.3)]],
+        }]
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            content = root / "content"
+            content.mkdir()
+            (content / "2026-10-05.json").write_text(json.dumps(post), encoding="utf-8")
+            render_site(content, root / "dist", root_url="https://tom-choi-bot.github.io")
+            home = (root / "dist/index.html").read_text(encoding="utf-8")
+            self.assertIn('class="trend-chart"', home)
+            self.assertIn('<svg', home)
+            self.assertIn('2026-09-08', home)
+            self.assertIn('<table', home)
+            self.assertIn('href="https://home.treasury.gov/example"', home)
+            self.assertIn("API 조회 2026-10-05 08:30 KST", home)
+            self.assertIn("원인은 단정할 수 없습니다", home)
+            self.assertIn("영업일의 수익률", home)
+
+    def test_trend_rejects_future_unsorted_and_nonfinite_observations(self):
+        post = self.sectioned_post()
+        post["trends"] = [{"title": "금리", "unit": "%", "caption": "과거 수치입니다.",
+                           "insight": "같은 기간 비교입니다.", "as_of": "2026-09-08",
+                           "retrieved_at": "2026-10-05T08:30:00+09:00",
+                           "source": "공식 자료", "url": "https://example.org/api",
+                           "points": [{"date": f"2026-09-{d:02d}", "value": 4.5 + n / 10}
+                                      for n, d in enumerate([1, 2, 3, 4, 7, 8])] }]
+        validate_post(post)
+        for bad in (float("nan"), -1, True):
+            broken = deepcopy(post)
+            broken["trends"][0]["points"][0]["value"] = bad
+            with self.subTest(value=bad), self.assertRaises(ValueError):
+                validate_post(broken)
+        for bad in ("2026-10-06", "2026-09-02"):
+            broken = deepcopy(post)
+            broken["trends"][0]["points"][-1]["date"] = bad
+            with self.subTest(date=bad), self.assertRaises(ValueError):
+                validate_post(broken)
+
     def test_visuals_reject_unsourced_future_and_invalid_numbers(self):
         post = self.sectioned_post()
         visual = {"title": "비교", "unit": "%", "caption": "과거 관측치입니다.",

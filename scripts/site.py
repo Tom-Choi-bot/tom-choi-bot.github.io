@@ -147,6 +147,42 @@ def validate_post(post: dict) -> None:
             if point["label"] in labels:
                 raise ValueError("duplicate visual point")
             labels.add(point["label"])
+    trends = post.get("trends", [])
+    if not isinstance(trends, list) or len(trends) > 3:
+        raise ValueError("trends must be at most three time series")
+    for trend in trends:
+        if not isinstance(trend, dict):
+            raise ValueError("invalid trend")
+        for key in ("title", "unit", "caption", "insight", "source", "as_of", "retrieved_at"):
+            if not isinstance(trend.get(key), str) or not trend[key].strip():
+                raise ValueError(f"trend.{key} required")
+        if not valid_url(trend.get("url")):
+            raise ValueError("trend source URL required")
+        try:
+            retrieved = datetime.fromisoformat(trend["retrieved_at"])
+            if retrieved.tzinfo is None or retrieved.date() < date.fromisoformat(trend["as_of"]):
+                raise ValueError("invalid trend retrieval time")
+        except (TypeError, ValueError) as exc:
+            raise ValueError("trend.retrieved_at requires a timezone and postdates the observations") from exc
+        points = trend.get("points")
+        if not isinstance(points, list) or not 6 <= len(points) <= 90:
+            raise ValueError("trend needs six to ninety observations")
+        previous = None
+        for point in points:
+            if not isinstance(point, dict) or not isinstance(point.get("date"), str):
+                raise ValueError("trend observation date required")
+            try:
+                observed = date.fromisoformat(point["date"])
+            except ValueError as exc:
+                raise ValueError("trend observation date invalid") from exc
+            if observed >= cutoff.date() or (previous is not None and observed <= previous):
+                raise ValueError("trend dates must increase and predate the cutoff")
+            value = point.get("value")
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0:
+                raise ValueError("trend values must be finite nonnegative numbers")
+            previous = observed
+        if trend["as_of"] != points[-1]["date"]:
+            raise ValueError("trend.as_of must match last observation")
     calendar = post.get("calendar", [])
     if not isinstance(calendar, list):
         raise ValueError("calendar must be a list")
@@ -237,6 +273,32 @@ def visual_card(visual: dict) -> str:
     return f'''<article class="visual-card"><h3>{e(visual['title'])}</h3><ol class="visual-bars">{''.join(rows)}</ol><p class="visual-caption">{e(visual['caption'])}</p><p class="visual-source">자료 기준 {e(visual['as_of'])} · <a href="{e(visual['url'])}" target="_blank" rel="noopener noreferrer">{e(visual['source'])} ↗</a></p></article>'''
 
 
+def trend_card(trend: dict) -> str:
+    """Plot dated observations at their actual time positions; disclose raw rows."""
+    points = trend["points"]
+    first, last = date.fromisoformat(points[0]["date"]), date.fromisoformat(points[-1]["date"])
+    values = [point["value"] for point in points]
+    low, high = min(values), max(values)
+    padding = (high - low) * .12 if high > low else max(high * .02, .1)
+    floor, ceiling = max(0, low - padding), high + padding
+    def coordinates(point: dict) -> tuple[float, float]:
+        day = date.fromisoformat(point["date"])
+        return (52 + 605 * (day - first).days / max(1, (last - first).days),
+                180 - 156 * (point["value"] - floor) / (ceiling - floor))
+    path = " ".join(f'{"M" if index == 0 else "L"}{x:.1f},{y:.1f}' for index, (x, y) in enumerate(map(coordinates, points)))
+    x, y = coordinates(points[-1])
+    unit = e(trend["unit"])
+    rows = ''.join(f'<tr><td><time datetime="{e(p["date"])}">{e(p["date"])}</time></td><td>{e(f"{p["value"]:,.2f}")}{unit}</td></tr>' for p in points)
+    svg = f'''<svg viewBox="0 0 680 230" role="img" aria-label="{e(trend['title'])}: {len(points)}개 관측치, {e(points[0]['date'])}부터 {e(points[-1]['date'])}까지" preserveAspectRatio="xMidYMid meet">
+<line x1="52" x2="657" y1="180" y2="180" class="trend-axis"/><line x1="52" x2="657" y1="24" y2="24" class="trend-grid"/>
+<text x="48" y="28" text-anchor="end">{high:,.2f}</text><text x="48" y="184" text-anchor="end">{low:,.2f}</text>
+<path d="{path}" class="trend-line"/><circle cx="{x:.1f}" cy="{y:.1f}" r="5" class="trend-end"/>
+<text x="52" y="214">{e(first.strftime('%m/%d'))}</text><text x="657" y="214" text-anchor="end">{e(last.strftime('%m/%d'))}</text></svg>'''
+    first_value = f'{points[0]["value"]:,.2f}'
+    last_value = f'{points[-1]["value"]:,.2f}'
+    return f'''<article class="trend-card"><h3>{e(trend['title'])}</h3><div class="trend-ends"><span>{e(points[0]['date'])} <strong>{e(first_value)}{unit}</strong></span><span>→</span><span>{e(points[-1]['date'])} <strong>{e(last_value)}{unit}</strong></span></div><div class="trend-chart">{svg}</div><p class="trend-insight"><strong>읽을 점</strong> {e(trend['insight'])}</p><p class="visual-caption">{e(trend['caption'])}</p><p class="visual-source">마지막 관측 {e(trend['as_of'])} · API 조회 {stamp(trend['retrieved_at'])} · <a href="{e(trend['url'])}" target="_blank" rel="noopener noreferrer">원자료 · {e(trend['source'])} ↗</a></p><details class="raw-data"><summary>관측치 {len(points)}개 보기</summary><div class="raw-data-scroll"><table><caption>{e(trend['title'])} 원자료</caption><thead><tr><th scope="col">관측일</th><th scope="col">값</th></tr></thead><tbody>{rows}</tbody></table></div></details></article>'''
+
+
 def brief_body(post: dict, *, home: bool = False) -> str:
     published = e(post["date"])
     cutoff = e(post["cutoff_at"][11:16])
@@ -245,7 +307,8 @@ def brief_body(post: dict, *, home: bool = False) -> str:
     flow_html = "".join(flow_card(flow) for flow in flows) if flows else '<p class="empty-flow">오늘 확인 가능한 자금 흐름 자료가 없습니다. 오래된 수치를 오늘 수치처럼 게시하지 않습니다.</p>'
     label = "오늘의 브리핑" if home else "일일 브리핑"
     if post.get("brief_type") == "sectioned":
-        revision = f'<span class="hero-revision">{stamp(post["updated_at"])} 보강 · 06:00 이전 자료로 재편집</span>' if "updated_at" in post else ""
+        revision_note = '관측치는 이전 날짜, API는 보강 시점 조회' if post.get('trends') else '06:00 이전 자료로 재편집'
+        revision = f'<span class="hero-revision">{stamp(post["updated_at"])} 보강 · {revision_note}</span>' if "updated_at" in post else ""
         highlights = []
         for section in ("미국 시장", "한국 시장", "글로벌 변수"):
             item = next(i for i in post["items"] if i["section"] == section)
@@ -262,9 +325,11 @@ def brief_body(post: dict, *, home: bool = False) -> str:
         events = ''.join(f'<li><time datetime="{e(ev["at"])}">{stamp(ev["at"])}</time><div><strong>{e(ev["event"])}</strong><p>{e(ev["watch"])}</p><a href="{e(ev["url"])}" target="_blank" rel="noopener noreferrer">일정 원문 · {e(ev["source"])} ↗</a></div></li>' for ev in post.get("calendar", []))
         calendar_html = f'<section class="calendar-panel" id="calendar"><h2>이번 주 일정</h2><ol>{events}</ol></section>' if events else ''
         visuals = post.get("visuals", [])
-        overview = (f'<section class="visual-dashboard" aria-label="숫자로 한눈에 보는 시장"><div class="visual-heading"><div class="eyebrow">THE SIGNALS</div><h2>숫자로 한눈에 보기</h2><p>서로 다른 단위와 시점을 섞지 않은 출처별 비교 · 06:00 KST 이전 자료</p></div><div class="visual-grid">{"".join(visual_card(v) for v in visuals)}</div><details class="visual-context"><summary>오늘의 시장 맥락 읽기</summary><p>{e(post["lead"])}</p></details></section>' if visuals else f'<section class="at-a-glance" aria-label="오늘 한눈에 보기"><div class="eyebrow">THE BRIEF</div><h2>오늘 한눈에 보기</h2><ol>{"".join(highlights)}</ol></section>')
-        hero_description = '' if visuals else f'<p class="hero-description">{e(post["lead"])}</p>'
-        return f'''<main id="main" class="wrap"><section class="hero{' hero-with-visual' if visuals else ''}"><div class="eyebrow"><span class="live-dot"></span> {label} <span class="hero-date">{published} {cutoff} KST 기준</span></div>
+        trends = post.get("trends", [])
+        chart_content = (f'<div class="trend-grid">{"".join(trend_card(t) for t in trends)}</div>' if trends else '') + (f'<div class="visual-grid">{"".join(visual_card(v) for v in visuals)}</div>' if visuals else '')
+        overview = (f'<section class="visual-dashboard" aria-label="숫자로 한눈에 보는 시장"><div class="visual-heading"><div class="eyebrow">THE SIGNALS</div><h2>숫자로 한눈에 보기</h2><p>관측일은 06:00 KST 이전 · API 조회 시각은 각 그래프에 표시</p></div>{chart_content}<details class="visual-context"><summary>오늘의 시장 맥락 읽기</summary><p>{e(post["lead"])}</p></details></section>' if trends or visuals else f'<section class="at-a-glance" aria-label="오늘 한눈에 보기"><div class="eyebrow">THE BRIEF</div><h2>오늘 한눈에 보기</h2><ol>{"".join(highlights)}</ol></section>')
+        hero_description = '' if trends or visuals else f'<p class="hero-description">{e(post["lead"])}</p>'
+        return f'''<main id="main" class="wrap"><section class="hero{' hero-with-visual' if trends or visuals else ''}"><div class="eyebrow"><span class="live-dot"></span> {label} <span class="hero-date">{published} {cutoff} KST 기준</span></div>
 <h1>{e(post['headline'])}</h1>{hero_description}{revision}<a class="terms-prompt" href="/terms/">기사 속 용어가 낯설다면 · 경제 용어 보기 →</a></section>
 {overview}
 <nav class="brief-jump" aria-label="브리핑 섹션">{nav}</nav>

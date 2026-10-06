@@ -1,0 +1,201 @@
+{
+  "brief_date": "2026-10-06",
+  "end_limit": "2026-10-02",
+  "retrieved_at": "2026-10-06T20:16:15+09:00",
+  "trends": [
+    {
+      "title": "미 국채 10년물 수익률",
+      "unit": "%",
+      "as_of": "2026-10-02",
+      "source": "미 재무부 Daily Treasury Par Yield Curve Rates",
+      "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/pages/xml?data=daily_treasury_yield_curve&field_tdr_date_value=2026",
+      "points": [
+        {
+          "date": "2026-09-01",
+          "value": 4.79
+        },
+        {
+          "date": "2026-09-02",
+          "value": 4.79
+        },
+        {
+          "date": "2026-09-03",
+          "value": 4.77
+        },
+        {
+          "date": "2026-09-04",
+          "value": 4.78
+        },
+        {
+          "date": "2026-09-08",
+          "value": 4.8
+        },
+        {
+          "date": "2026-09-09",
+          "value": 4.83
+        },
+        {
+          "date": "2026-09-10",
+          "value": 4.95
+        },
+        {
+          "date": "2026-09-11",
+          "value": 4.96
+        },
+        {
+          "date": "2026-09-14",
+          "value": 4.97
+        },
+        {
+          "date": "2026-09-15",
+          "value": 5.0
+        },
+        {
+          "date": "2026-09-16",
+          "value": 5.01
+        },
+        {
+          "date": "2026-09-17",
+          "value": 4.94
+        },
+        {
+          "date": "2026-09-18",
+          "value": 5.01
+        },
+        {
+          "date": "2026-09-21",
+          "value": 4.96
+        },
+        {
+          "date": "2026-09-22",
+          "value": 4.96
+        },
+        {
+          "date": "2026-09-23",
+          "value": 5.11
+        },
+        {
+          "date": "2026-09-24",
+          "value": 5.18
+        },
+        {
+          "date": "2026-09-25",
+          "value": 5.17
+        },
+        {
+          "date": "2026-09-28",
+          "value": 5.24
+        },
+        {
+          "date": "2026-09-29",
+          "value": 5.26
+        },
+        {
+          "date": "2026-09-30",
+          "value": 5.29
+        },
+        {
+          "date": "2026-10-01",
+          "value": 5.24
+        },
+        {
+          "date": "2026-10-02",
+          "value": 5.28
+        }
+      ]
+    },
+    {
+      "title": "브렌트유 현물가격",
+      "unit": "달러/배럴",
+      "as_of": "2026-09-29",
+      "source": "미 에너지정보청(EIA) Brent Spot RBRTE",
+      "url": "https://api.eia.gov/v2/petroleum/pri/spt/data/?api_key=DEMO_KEY&frequency=daily&data%5B0%5D=value&facets%5Bseries%5D%5B%5D=RBRTE&start=2026-09-01&end=2026-10-02&sort%5B0%5D%5Bcolumn%5D=period&sort%5B0%5D%5Bdirection%5D=asc&length=100",
+      "points": [
+        {
+          "date": "2026-09-01",
+          "value": 96.02
+        },
+        {
+          "date": "2026-09-02",
+          "value": 97.59
+        },
+        {
+          "date": "2026-09-03",
+          "value": 100.52
+        },
+        {
+          "date": "2026-09-04",
+          "value": 102.24
+        },
+        {
+          "date": "2026-09-07",
+          "value": 104.47
+        },
+        {
+          "date": "2026-09-08",
+          "value": 106.12
+        },
+        {
+          "date": "2026-09-09",
+          "value": 109.51
+        },
+        {
+          "date": "2026-09-10",
+          "value": 120.98
+        },
+        {
+          "date": "2026-09-11",
+          "value": 118.06
+        },
+        {
+          "date": "2026-09-14",
+          "value": 121.25
+        },
+        {
+          "date": "2026-09-15",
+          "value": 130.8
+        },
+        {
+          "date": "2026-09-16",
+          "value": 127.84
+        },
+        {
+          "date": "2026-09-17",
+          "value": 121.18
+        },
+        {
+          "date": "2026-09-18",
+          "value": 119.66
+        },
+        {
+          "date": "2026-09-21",
+          "value": 116.15
+        },
+        {
+          "date": "2026-09-22",
+          "value": 114.89
+        },
+        {
+          "date": "2026-09-23",
+          "value": 117.45
+        },
+        {
+          "date": "2026-09-24",
+          "value": 120.92
+        },
+        {
+          "date": "2026-09-25",
+          "value": 116.01
+        },
+        {
+          "date": "2026-09-28",
+          "value": 119.97
+        },
+        {
+          "date": "2026-09-29",
+          "value": 113.96
+        }
+      ]
+    }
+  ]
+}
