@@ -201,6 +201,65 @@ class SiteTests(unittest.TestCase):
             self.assertIn("원인은 단정할 수 없습니다", home)
             self.assertIn("영업일의 수익률", home)
 
+    def test_yesterday_delta_precedes_charts_and_links_both_sources(self):
+        post = self.sectioned_post()
+        post["changes"] = [{
+            "label": "주가 변화", "before": "10월 3일 100", "after": "10월 4일 98",
+            "insight": "실제 거래일과 비교 범위를 지킨 하락입니다.",
+            "previous_url": "https://example.org/old", "url": "https://example.org/new",
+        }]
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            content = root / "content"
+            content.mkdir()
+            (content / "2026-10-05.json").write_text(json.dumps(post), encoding="utf-8")
+            render_site(content, root / "dist", root_url="https://tom-choi-bot.github.io")
+            home = (root / "dist/index.html").read_text(encoding="utf-8")
+            self.assertIn("어제와 달라진 점", home)
+            self.assertLess(home.index("어제와 달라진 점"), home.index("오늘 한눈에 보기"))
+            self.assertIn('href="https://example.org/old"', home)
+            self.assertIn('href="https://example.org/new"', home)
+
+    def test_delta_requires_sourced_comparable_or_explicitly_distinct_interpretation(self):
+        post = self.sectioned_post()
+        post["changes"] = [{"label": "변화", "before": "어제", "after": "오늘",
+                            "insight": "관측 기간을 분명히 밝히고 섣불리 원인을 단정하지 않습니다.",
+                            "previous_url": "https://example.org/old", "url": "https://example.org/new"}]
+        validate_post(post)
+        for key, bad in (("previous_url", ""), ("insight", "짧음"), ("after", "")):
+            broken = deepcopy(post)
+            broken["changes"][0][key] = bad
+            with self.subTest(field=key), self.assertRaises(ValueError):
+                validate_post(broken)
+
+    def test_unchanged_prior_series_is_not_republished_as_a_new_chart(self):
+        post = self.sectioned_post()
+        post["date"] = "2026-10-06"
+        post["cutoff_at"] = "2026-10-06T06:00:00+09:00"
+        trend = {"title": "현물 추이", "unit": "달러", "caption": "과거 값입니다.",
+                 "insight": "이것만으로 원인을 확정할 수는 없습니다.", "as_of": "2026-10-04",
+                 "retrieved_at": "2026-10-06T08:00:00+09:00", "source": "공식 API",
+                 "url": "https://example.org/raw", "points": [{"date": f"2026-10-{d:02d}", "value": d + 100}
+                                                      for d in range(1, 5)] + [{"date": "2026-09-29", "value": 99}, {"date": "2026-09-30", "value": 100}]}
+        trend["points"] = sorted(trend["points"], key=lambda x: x["date"])
+        earlier = deepcopy(post)
+        earlier["date"] = "2026-10-05"
+        earlier["cutoff_at"] = "2026-10-05T06:00:00+09:00"
+        earlier["trends"] = [deepcopy(trend)]
+        earlier["trends"][0]["retrieved_at"] = "2026-10-05T08:00:00+09:00"
+        post["trends"] = [trend]
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            content = root / "content"
+            content.mkdir()
+            (content / "2026-10-05.json").write_text(json.dumps(earlier), encoding="utf-8")
+            (content / "2026-10-06.json").write_text(json.dumps(post), encoding="utf-8")
+            render_site(content, root / "dist", root_url="https://tom-choi-bot.github.io")
+            home = (root / "dist/index.html").read_text(encoding="utf-8")
+            self.assertNotIn('class="trend-chart"', home)
+            self.assertIn("전일 이후 새 관측치가 없어 같은 추이 그래프를 반복하지 않았습니다", home)
+            self.assertIn('href="/2026-10-05/"', home)
+
     def test_trend_rejects_future_unsorted_and_nonfinite_observations(self):
         post = self.sectioned_post()
         post["trends"] = [{"title": "금리", "unit": "%", "caption": "과거 수치입니다.",

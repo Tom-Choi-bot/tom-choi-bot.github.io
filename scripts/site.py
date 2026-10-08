@@ -118,6 +118,19 @@ def validate_post(post: dict) -> None:
             raise ValueError("each sectioned item needs a substantive causal mechanism")
     elif post.get("brief_type") is not None:
         raise ValueError("invalid brief_type")
+    changes = post.get("changes", [])
+    if not isinstance(changes, list) or len(changes) > 4:
+        raise ValueError("changes must be at most four sourced comparisons")
+    for change in changes:
+        if not isinstance(change, dict):
+            raise ValueError("invalid yesterday comparison")
+        for key in ("label", "before", "after", "insight"):
+            if not isinstance(change.get(key), str) or not change[key].strip():
+                raise ValueError(f"changes.{key} required")
+        if len(change["insight"].strip()) < 20:
+            raise ValueError("changes.insight needs interpretation and limits")
+        if not valid_url(change.get("previous_url")) or not valid_url(change.get("url")):
+            raise ValueError("changes need both original source URLs")
     visuals = post.get("visuals", [])
     if not isinstance(visuals, list) or len(visuals) > 3:
         raise ValueError("visuals must be at most three comparisons")
@@ -299,7 +312,7 @@ def trend_card(trend: dict) -> str:
     return f'''<article class="trend-card"><h3>{e(trend['title'])}</h3><div class="trend-ends"><span>{e(points[0]['date'])} <strong>{e(first_value)}{unit}</strong></span><span>→</span><span>{e(points[-1]['date'])} <strong>{e(last_value)}{unit}</strong></span></div><div class="trend-chart">{svg}</div><p class="trend-insight"><strong>읽을 점</strong> {e(trend['insight'])}</p><p class="visual-caption">{e(trend['caption'])}</p><p class="visual-source">마지막 관측 {e(trend['as_of'])} · API 조회 {stamp(trend['retrieved_at'])} · <a href="{e(trend['url'])}" target="_blank" rel="noopener noreferrer">원자료 · {e(trend['source'])} ↗</a></p><details class="raw-data"><summary>관측치 {len(points)}개 보기</summary><div class="raw-data-scroll"><table><caption>{e(trend['title'])} 원자료</caption><thead><tr><th scope="col">관측일</th><th scope="col">값</th></tr></thead><tbody>{rows}</tbody></table></div></details></article>'''
 
 
-def brief_body(post: dict, *, home: bool = False) -> str:
+def brief_body(post: dict, *, home: bool = False, previous: dict | None = None) -> str:
     published = e(post["date"])
     cutoff = e(post["cutoff_at"][11:16])
     items = "".join(item_card(item) for item in post["items"])
@@ -326,12 +339,20 @@ def brief_body(post: dict, *, home: bool = False) -> str:
         calendar_html = f'<section class="calendar-panel" id="calendar"><h2>이번 주 일정</h2><ol>{events}</ol></section>' if events else ''
         visuals = post.get("visuals", [])
         trends = post.get("trends", [])
+        prior_trends = {(t["title"], t["unit"]): t for t in previous.get("trends", [])} if previous else {}
+        repeated = [t for t in trends if (p := prior_trends.get((t["title"], t["unit"])))
+                    and t["as_of"] == p["as_of"] and t["points"] == p["points"]]
+        trends = [t for t in trends if t not in repeated]
         chart_content = (f'<div class="trend-grid">{"".join(trend_card(t) for t in trends)}</div>' if trends else '') + (f'<div class="visual-grid">{"".join(visual_card(v) for v in visuals)}</div>' if visuals else '')
+        changes = post.get("changes", [])
+        change_cards = ''.join(f'<article class="delta-card"><h3>{e(c["label"])}</h3><div class="delta-values"><span><small>이전</small>{e(c["before"])}</span><span><small>이번</small>{e(c["after"])}</span></div><p>{e(c["insight"])}</p><div class="delta-sources"><a href="{e(c["previous_url"])}" target="_blank" rel="noopener noreferrer">이전 원문 ↗</a><a href="{e(c["url"])}" target="_blank" rel="noopener noreferrer">이번 원문 ↗</a></div></article>' for c in changes)
+        delta_section = f'<section class="delta-panel" aria-label="전일 대비 변화"><div class="eyebrow">WHAT CHANGED</div><h2>어제와 달라진 점</h2><div class="delta-grid">{change_cards}</div></section>' if changes else ''
+        repeat_note = f'<p class="unchanged-note">전일 이후 새 관측치가 없어 같은 추이 그래프를 반복하지 않았습니다: {e(", ".join(t["title"] for t in repeated))}. <a href="/{e(previous["date"])}/">전일 그래프 보기 →</a></p>' if repeated else ''
         overview = (f'<section class="visual-dashboard" aria-label="숫자로 한눈에 보는 시장"><div class="visual-heading"><div class="eyebrow">THE SIGNALS</div><h2>숫자로 한눈에 보기</h2><p>관측일은 06:00 KST 이전 · API 조회 시각은 각 그래프에 표시</p></div>{chart_content}<details class="visual-context"><summary>오늘의 시장 맥락 읽기</summary><p>{e(post["lead"])}</p></details></section>' if trends or visuals else f'<section class="at-a-glance" aria-label="오늘 한눈에 보기"><div class="eyebrow">THE BRIEF</div><h2>오늘 한눈에 보기</h2><ol>{"".join(highlights)}</ol></section>')
         hero_description = '' if trends or visuals else f'<p class="hero-description">{e(post["lead"])}</p>'
         return f'''<main id="main" class="wrap"><section class="hero{' hero-with-visual' if trends or visuals else ''}"><div class="eyebrow"><span class="live-dot"></span> {label} <span class="hero-date">{published} {cutoff} KST 기준</span></div>
 <h1>{e(post['headline'])}</h1>{hero_description}{revision}<a class="terms-prompt" href="/terms/">기사 속 용어가 낯설다면 · 경제 용어 보기 →</a></section>
-{overview}
+{delta_section}{overview}{repeat_note}
 <nav class="brief-jump" aria-label="브리핑 섹션">{nav}</nav>
 <div class="content-grid"><div class="main-column">{''.join(sections)}</div>
 <aside class="side-column" aria-label="돈의 흐름"><div class="flow-panel" id="money-flow"><div class="panel-label">FOCUS / MONEY FLOW</div><h2>돈의 흐름</h2><p class="panel-intro">통계의 대상 기간과 자금 유입액을 구분합니다.</p>{flow_html}</div></aside></div>
@@ -386,9 +407,9 @@ def render_site(content_dir: Path, output_dir: Path, *, root_url: str) -> None:
     validate_terms(terms)
     if posts:
         latest = posts[0]
-        write_page(output_dir, "", head(latest["headline"], "경제·주식·부동산과 돈의 흐름을 출처와 함께 읽는 매일 브리핑", root_url + "/") + brief_body(latest, home=True) + foot())
-        for post in posts:
-            write_page(output_dir, post["date"], head(post["headline"], post["headline"], f"{root_url}/{post['date']}/") + brief_body(post) + foot())
+        write_page(output_dir, "", head(latest["headline"], "경제·주식·부동산과 돈의 흐름을 출처와 함께 읽는 매일 브리핑", root_url + "/") + brief_body(latest, home=True, previous=posts[1] if len(posts) > 1 else None) + foot())
+        for index, post in enumerate(posts):
+            write_page(output_dir, post["date"], head(post["headline"], post["headline"], f"{root_url}/{post['date']}/") + brief_body(post, previous=posts[index+1] if index+1 < len(posts) else None) + foot())
     else:
         write_page(output_dir, "", head("첫 브리핑 준비 중", "시장노트가 첫 브리핑을 준비하고 있습니다", root_url + "/") + '<main id="main" class="wrap simple-page"><div class="eyebrow">MARKET NOTE</div><h1>숫자를 읽고,<br>흐름을 잇습니다.</h1><p>첫 번째 근거 있는 브리핑을 준비하고 있습니다. 출처와 자료 기준일을 함께 공개합니다.</p><a class="button" href="/method/">작성 방법 보기 ↗</a></main>' + foot())
     write_page(output_dir, "terms", simple_page("경제 용어", terms_body(terms), root_url, "terms"))
