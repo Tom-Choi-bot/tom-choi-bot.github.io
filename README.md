@@ -4,9 +4,17 @@
 
 ## 구조
 
+- 홈: 뉴스·경제·청년 정책을 함께 읽는 매거진
+- `/articles/YYYY-MM-DD/<id>/`: 경제 이슈별 독립 상세 페이지 (기존 날짜별 브리핑 주소 유지)
+- `/news/`, `/policies/`: 뉴스·청년 정책 목록과 상세 페이지
+- `/terms/`: 검색 가능한 용어 사전. 본문 용어 링크에서 짧은 설명을 열 수 있고, 용어별 상세 주소로 연결
+- `/history/`: 분야별 지난 기록
 - `content/YYYY-MM-DD.json`: 날짜별 검증 가능한 발행 원고
+- `content/news/YYYY-MM-DD-id.json`, `content/policies/YYYY-MM-DD-id.json`: 별도로 확인한 뉴스·정책 원고
 - `data/terms.json`: 출처·예시·주의점이 있는 경제 용어 카드
 - `scripts/site.py`: 표준 라이브러리만 사용하는 정적 사이트 생성기
+- `scripts/magazine.py`: 매거진 화면·독립 기사·용어 연결 및 뉴스·정책 검사
+- `scripts/intake.py`: 검증한 원고의 중복·정정 검사와 원자적 저장
 - `scripts/collect.py`: 공개 RSS/Atom의 *후보* 수집기 (수집 결과는 게시물이 아님)
 - `scripts/fetch_trends.py`: 미 재무부 금리 XML·EIA 브렌트 현물 JSON API에서 날짜별 관측치 수집
 - `data/trend-raw/YYYY-MM-DD.json`: 기사별 실제 API 응답에서 추린 관측일·값·원자료 URL 스냅샷
@@ -30,6 +38,8 @@ python3 -m http.server --directory dist 8000
 첫 게시물(2026-10-05)은 실제 오전 6시에 발행된 글이 아니라, 요청에 따라 **오전 6시까지 발표된 자료만 사용해 나중에 재구성한 시연본**입니다. 이후 발행물은 실행 당시 확인 가능한 자료를 사용합니다.
 
 ## 발행
+
+뉴스·정책의 입력 형식과 예약 실행기의 연결 절차는 [자동 발행 연결 안내](docs/publishing.md)를 참고합니다. 확인된 원고가 없는 분야는 빈 상태를 표시합니다. 정책의 접수 상태는 KST 날짜로 계산하며 신청 자격이나 마감 시각을 단정하지 않습니다. 사전 검색과 본문 용어 설명은 JavaScript로 보강하고, JavaScript가 꺼져도 용어별 상세 페이지 링크는 동작합니다.
 
 평소 원고 생성은 별도의 Hermes 예약 작업에서 **매일 06:00 Asia/Seoul**에 실행합니다. 이 작업은 출처를 확인한 뒤 이 저장소에 원고를 커밋·푸시합니다. 푸시가 GitHub Actions Pages 배포를 실행합니다. **06:45 KST**에는 별도의 스크립트 예약 작업이 공개 홈 화면의 당일 브리핑을 확인하고, 누락·접속 실패 시에만 운영 채팅으로 알립니다. 원고 생성에 GitHub Actions의 개인 토큰이나 별도 유료 LLM API 키를 저장하지 않습니다. 예약 작업이 실행되지 않거나 출처 검증에 실패하면 새 글은 발행하지 않고 기존 사이트를 보존합니다.
 

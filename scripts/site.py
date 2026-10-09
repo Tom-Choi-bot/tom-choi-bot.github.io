@@ -8,17 +8,24 @@ import json
 import math
 import re
 import shutil
+import sys
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import urlsplit
 from xml.sax.saxutils import escape as xml_escape
 
+ROOT = Path(__file__).resolve().parents[1]
+if not __package__:
+    sys.path.insert(0, str(ROOT))
+from scripts import magazine
+
 SITE_TITLE = "시장노트"
 CSS_VERSION = hashlib.sha256((Path(__file__).resolve().parents[1] / "assets/style.css").read_bytes()).hexdigest()[:12]
 CATEGORIES = {"경제": "economy", "주식": "stocks", "부동산": "housing"}
 SECTIONS = {"미국 시장": "us-market", "한국 시장": "kr-market", "글로벌 변수": "global", "부동산": "housing"}
-NAV = [("오늘", "/"), ("경제", "/economy/"), ("주식", "/stocks/"),
-       ("부동산", "/housing/"), ("돈의 흐름", "/money-flow/"), ("경제 용어", "/terms/")]
+NAV = [("오늘", "/"), ("뉴스", "/news/"), ("경제", "/economy/"),
+       ("청년 정책", "/policies/"), ("지난 기록", "/history/"), ("용어 사전", "/terms/")]
+TERMS = []
 
 
 def e(value: object) -> str:
@@ -233,6 +240,12 @@ def validate_terms(terms: list[dict]) -> None:
         if term["term"] in seen:
             raise ValueError("duplicate glossary term")
         seen.add(term["term"])
+        aliases = term.get("aliases", [])
+        if not isinstance(aliases, list) or any(not isinstance(a, str) or not a.strip() for a in aliases):
+            raise ValueError("glossary aliases must be nonempty strings")
+    names = [name for term in terms for name in [term["term"], *term.get("aliases", [])]]
+    if len(names) != len(set(names)):
+        raise ValueError("duplicate glossary alias")
 
 
 def head(title: str, description: str, canonical: str) -> str:
@@ -242,12 +255,13 @@ def head(title: str, description: str, canonical: str) -> str:
 <link rel="canonical" href="{e(canonical)}"><link rel="alternate" type="application/rss+xml" title="시장노트 RSS" href="/feed.xml">
 <link rel="stylesheet" href="/assets/style.css?v={CSS_VERSION}"><title>{e(title)} · 시장노트</title></head><body>
 <a class="skip" href="#main">본문으로 건너뛰기</a>
-<header class="site-header"><div class="wrap header-inner"><a class="brand" href="/" aria-label="시장노트 첫 화면"><span class="brand-mark">◉</span> 시장노트</a><span class="header-caption">숫자와 출처로 읽는 오늘</span></div>
+<header class="site-header"><div class="wrap header-inner"><a class="brand" href="/" aria-label="시장노트 첫 화면"><span class="brand-mark">◉</span> 시장노트</a><span class="header-caption">뉴스를 이해하고, 내일을 준비하는 읽기</span></div>
 <nav class="nav wrap" aria-label="주요 메뉴">{''.join(f'<a href="{path}">{e(name)}</a>' for name, path in NAV)}</nav></header>'''
 
 
 def foot() -> str:
-    return '''<footer class="site-footer"><div class="wrap"><strong>시장노트</strong><p>공개된 자료의 요약과 해설입니다. 투자 권유가 아닙니다. 발표 시점과 집계 기준은 다를 수 있습니다.</p><p><a href="/method/">출처·작성 방법</a> · <a href="/feed.xml">RSS 구독</a></p></div></footer></body></html>'''
+    script_version = hashlib.sha256((ROOT / "assets/site.js").read_bytes()).hexdigest()[:12]
+    return '''<footer class="site-footer"><div class="wrap"><strong>시장노트</strong><p>공개된 자료의 요약과 해설입니다. 투자 권유가 아닙니다. 발표 시점과 집계 기준은 다를 수 있습니다.</p><p><a href="/method/">출처·작성 방법</a> · <a href="/terms/">용어 사전</a> · <a href="/feed.xml">RSS 구독</a></p></div></footer>''' + magazine.term_dialog(TERMS) + f'<script src="/assets/site.js?v={script_version}" defer></script></body></html>'
 
 
 def stamp(timestamp: str) -> str:
@@ -256,16 +270,22 @@ def stamp(timestamp: str) -> str:
 
 
 def item_card(item: dict) -> str:
+    seen_terms = set()
+    text = lambda value: magazine.link_text(value, TERMS, seen_terms)
     published = stamp(item["published_at"]) if "published_at" in item else e(item["published_on"] + " (시각 미공개)")
     mechanism = item.get("mechanism")
     fact_label = '<div class="analysis-label fact-label">확인된 정보</div>' if mechanism else ''
-    mechanism_html = f'<div class="analysis-block mechanism"><div class="analysis-label">작동 원리</div><p>{e(mechanism)}</p></div>' if mechanism else ''
+    summary, context = text(item['summary']), text(item['context'])
+    mechanism_html = f'<div class="analysis-block mechanism"><div class="analysis-label">작동 원리</div><p>{text(mechanism)}</p></div>' if mechanism else ''
+    title = e(item['title'])
+    if item.get('_detail_url'):
+        title = f'<a href="{e(item["_detail_url"])}">{title}</a>'
     insight_label = "인사이트·한계" if mechanism else "읽는 법"
     return f'''<article class="news-card"><div class="card-top"><span class="tag">{e(item['category'])}</span><span class="published">발표 {published}</span></div>
-<h3>{e(item['title'])}</h3>{fact_label}<p class="summary">{e(item['summary'])}</p>
-<div class="analysis-block"><div class="analysis-label">숫자와 맥락</div><p>{e(item['context'])}</p></div>
-{mechanism_html}<div class="analysis-block"><div class="analysis-label">{insight_label}</div><p>{e(item['why_it_matters'])}</p></div>
-<div class="next-check"><strong>다음에 확인할 것</strong><p>{e(item['watch_next'])}</p></div>
+<h3>{title}</h3>{fact_label}<p class="summary">{summary}</p>
+<div class="analysis-block"><div class="analysis-label">숫자와 맥락</div><p>{context}</p></div>
+{mechanism_html}<div class="analysis-block"><div class="analysis-label">{insight_label}</div><p>{text(item['why_it_matters'])}</p></div>
+<div class="next-check"><strong>다음에 확인할 것</strong><p>{text(item['watch_next'])}</p></div>
 <a class="source" href="{e(item['url'])}" target="_blank" rel="noopener noreferrer">원문 · {e(item['source'])} <span aria-hidden="true">↗</span></a></article>'''
 
 
@@ -389,22 +409,29 @@ def terms_body(terms: list[dict]) -> str:
 
 def render_site(content_dir: Path, output_dir: Path, *, root_url: str) -> None:
     """Render verified JSON posts to a dependency-free Pages artifact."""
+    global TERMS
     posts = []
     for path in sorted(content_dir.glob("*.json"), reverse=True):
         post = json.loads(path.read_text(encoding="utf-8"))
         validate_post(post)
         if path.stem != post["date"]:
             raise ValueError(f"filename/date mismatch: {path.name}")
+        for item in post['items']:
+            item['_detail_url'] = magazine.article_url(post, item)
         posts.append(post)
+    terms = json.loads((ROOT / "data/terms.json").read_text(encoding="utf-8"))
+    validate_terms(terms)
+    TERMS = terms
+    news = magazine.load_entries(content_dir, 'news')
+    policies = magazine.load_entries(content_dir, 'policies')
     if output_dir.exists():
         shutil.rmtree(output_dir)
     output_dir.mkdir(parents=True)
     css = Path(__file__).resolve().parents[1] / "assets/style.css"
     (output_dir / "assets").mkdir()
     shutil.copy2(css, output_dir / "assets/style.css")
+    shutil.copy2(ROOT / "assets/site.js", output_dir / "assets/site.js")
     (output_dir / ".nojekyll").write_text("", encoding="utf-8")
-    terms = json.loads((Path(__file__).resolve().parents[1] / "data/terms.json").read_text(encoding="utf-8"))
-    validate_terms(terms)
     if posts:
         latest = posts[0]
         write_page(output_dir, "", head(latest["headline"], "경제·주식·부동산과 돈의 흐름을 출처와 함께 읽는 매일 브리핑", root_url + "/") + brief_body(latest, home=True, previous=posts[1] if len(posts) > 1 else None) + foot())
@@ -423,8 +450,14 @@ def render_site(content_dir: Path, output_dir: Path, *, root_url: str) -> None:
     write_page(output_dir, "money-flow", simple_page("돈의 흐름", f'<div class="eyebrow">MONEY FLOW</div><h1>돈의 흐름</h1><p>발표 주기가 다른 지표를 억지로 같은 날의 흐름으로 엮지 않습니다.</p><div class="flow-list">{flows or "<p>검증된 자료가 올라오면 이곳에 게시합니다.</p>"}</div>', root_url, "money-flow"))
     method = '''<div class="eyebrow">METHOD</div><h1>출처와 작성 방법</h1><div class="method-copy"><h2>자료를 고르는 법</h2><p>공시·기관 발표·공개 자료를 우선합니다. 모든 소식에 원문 링크와 발표 시각을 표시하고, 자금 흐름 자료에는 별도로 집계 기준일을 표시합니다.</p><h2>요약과 해석</h2><p>원문 전체를 복제하지 않고 자체 문장으로 요약합니다. 추정이나 맥락은 확인된 사실과 분리하여 씁니다. 출처·날짜·형식 검사를 통과하지 못한 브리핑은 발행하지 않습니다.</p><h2>한계</h2><p>자료의 공표 시점과 실제 집계 대상 기간은 다를 수 있으며 이후 정정될 수 있습니다. 이 사이트는 투자 권유가 아닙니다. 자료 확인이 불가능한 날에는 내용을 만들어내지 않습니다.</p></div>'''
     write_page(output_dir, "method", simple_page("출처·작성 방법", method, root_url, "method"))
-    entries = ''.join(f'<item><title>{xml_escape(p["headline"])}</title><link>{root_url}/{p["date"]}/</link><guid>{root_url}/{p["date"]}/</guid><description>{xml_escape(str(len(p["items"])) + "건의 확인된 소식과 돈의 흐름")}</description></item>' for p in posts[:30])
+    feed_items = [(p['date'], p['headline'], f'{root_url}/{p["date"]}/', str(len(p['items'])) + '건의 확인된 소식과 돈의 흐름') for p in posts]
+    for channel, records in [('news', news), ('policies', policies)]:
+        feed_items += [(entry['date'], entry['title'], root_url + magazine.entry_url(entry, channel), entry['summary']) for entry in records]
+    entries = ''.join(f'<item><title>{xml_escape(title)}</title><link>{xml_escape(url)}</link><guid>{xml_escape(url)}</guid><description>{xml_escape(description)}</description></item>' for _, title, url, description in sorted(feed_items, key=lambda entry: entry[0], reverse=True)[:30])
     (output_dir / "feed.xml").write_text(f'<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>시장노트</title><link>{root_url}/</link><description>출처와 함께 읽는 매일 시장 브리핑</description>{entries}</channel></rss>', encoding="utf-8")
+    for slug, title, body in magazine.pages(posts, terms, news, policies, item_card):
+        marker = ' data-magazine="true"' if not slug else ''
+        write_page(output_dir, slug, head(title, title, root_url + '/' + (slug + '/' if slug else '')) + f'<main id="main" class="wrap magazine-page"{marker}>{body}</main>' + foot())
 
 
 def main() -> None:
