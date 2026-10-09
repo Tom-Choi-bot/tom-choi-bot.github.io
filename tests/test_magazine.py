@@ -150,6 +150,17 @@ class MagazineTests(unittest.TestCase):
         self.assertIn(second['title'],listing)
         self.assertNotIn(first['title'],listing)
         self.assertTrue((self.output / 'policies/2020-01-02/verified-story/index.html').exists())
+        older = (self.output / 'policies/2020-01-02/verified-story/index.html').read_text()
+        self.assertIn('더 최근 확인본', older)
+        self.assertIn('/policies/2020-01-03/verified-story/', older)
+
+    def test_last_checked_date_is_shown_in_kst_even_for_utc_input(self):
+        entry = manuscript()
+        entry['checked_at'] = '2020-01-01T23:00:00+00:00'
+        accept(entry, 'news', self.content)
+        home = self.build()
+        self.assertIn('마지막 확인 2020-01-02', home)
+        self.assertNotIn('마지막 확인 2020-01-01', home)
 
     def test_glossary_links_escape_content_and_link_only_first_mention(self):
         term = {'term':'기준금리','aliases':['base rate']}

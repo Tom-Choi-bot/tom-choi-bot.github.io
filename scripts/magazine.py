@@ -200,7 +200,7 @@ def home(posts, terms, news, policies):
     lead = latest['lead'] if latest else '뉴스의 배경, 시장의 흐름, 생활에 필요한 정책을 근거와 함께 읽습니다.'
     feature_url = f'/{latest["date"]}/' if latest else '/economy/'
     feature = f'''<section class="magazine-hero"><div class="feature-story"><div class="eyebrow">THE DAILY NOTE · 경제 브리핑</div><h1><a href="{feature_url}">{e(headline)}</a></h1><p>{link_text(excerpt(lead, 240), terms)}</p><a class="feature-link" href="{feature_url}">브리핑 전체 읽기 <span aria-hidden="true">↗</span></a></div><aside class="editor-note"><span class="issue-number">READ / UNDERSTAND / ACT</span><h2>흐름을 읽고,<br>내일을 준비합니다.</h2><p>핵심은 간결하게.<br>배경과 근거는 충분하게.</p><a href="/terms/">낯선 용어부터 알아보기 →</a></aside></section>'''
-    status = '<nav class="edition-status-grid" aria-label="분야별 자료 업데이트">' + freshness('뉴스', news[0]['checked_at'][:10] if news else '', '/news/', '마지막 확인') + freshness('경제', latest['date'] if latest else '', '/economy/', '자료 기준') + freshness('청년 정책', policies[0]['checked_at'][:10] if policies else '', '/policies/', '마지막 확인') + '</nav>'
+    status = '<nav class="edition-status-grid" aria-label="분야별 자료 업데이트">' + freshness('뉴스', news[0]['date'] if news else '', '/news/', '마지막 확인') + freshness('경제', latest['date'] if latest else '', '/economy/', '자료 기준') + freshness('청년 정책', policies[0]['date'] if policies else '', '/policies/', '마지막 확인') + '</nav>'
     news_cards = ''.join(entry_preview(n, 'news', terms) for n in news[:3]) or empty('news')
     policy_cards = ''.join(entry_preview(p, 'policies', terms) for p in sorted(policies, key=lambda p: (policy_status(p) == '마감', p['deadline'] or '9999'))[:3]) or empty('policies')
     markets = ''.join(preview(i['title'], i['summary'], article_url(latest, i), i.get('section', i['category']), '발표 ' + release(i), terms, 'data-market-card') for i in latest['items']) if latest else '<p>확인된 경제 브리핑이 없습니다.</p>'
@@ -277,6 +277,7 @@ def pages(posts, terms, news, policies, render_item):
     """Return page bodies; the site builder owns document wrappers and assets."""
     latest_policies = list({entry['id']: entry for entry in reversed(policies)}.values())
     latest_policies.sort(key=lambda entry: datetime.fromisoformat(entry['checked_at']), reverse=True)
+    current_policy = {entry['id']: entry for entry in latest_policies}
     result = [('', '오늘의 시장노트', home(posts,terms,news,latest_policies)), ('news','뉴스',listing(news,'news',terms)), ('policies','청년 정책',listing(latest_policies,'policies',terms)), ('terms','용어 사전',glossary(terms))]
     references = {term_id(t): [] for t in terms}
     all_articles = []
@@ -295,7 +296,10 @@ def pages(posts, terms, news, policies, render_item):
     for channel, entries in [('news',news),('policies',policies)]:
         for entry in entries:
             url = entry_url(entry,channel)
-            result.append((url.strip('/'),entry['title'],entry_body(entry,channel,terms)))
+            body = entry_body(entry,channel,terms)
+            if channel == 'policies' and current_policy[entry['id']] != entry:
+                body = f'<p class="unchanged-note">이 공고의 더 최근 확인본이 있습니다. <a href="{entry_url(current_policy[entry["id"]],channel)}">최신 안내 보기 →</a></p>' + body
+            result.append((url.strip('/'),entry['title'],body))
             all_articles.append((entry,url,None))
             history.append((entry['date'], f'<li><time>{e(entry["date"])}</time><a href="{url}">{e(entry["title"])}</a><span>{"뉴스" if channel == "news" else "청년 정책"}</span></li>'))
     history_html = ''.join(body for _, body in sorted(history, key=lambda item: item[0], reverse=True))
