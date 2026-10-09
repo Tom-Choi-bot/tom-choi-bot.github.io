@@ -53,6 +53,18 @@ class SiteTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_post(self.post)
 
+    def test_keeps_long_explanations_as_escaped_paragraphs(self):
+        from scripts.site import item_card
+        item = deepcopy(self.post['items'][0])
+        first = '첫 번째 설명은 길어도 모두 표시합니다. ' * 30
+        last = '마지막 문단도 생략하지 않습니다. <script>alert(1)</script>'
+        item['context'] = first + '\n\n' + last
+        rendered = item_card(item)
+        self.assertIn(first.strip() + '</p><p>', rendered)
+        self.assertIn('마지막 문단도 생략하지 않습니다.', rendered)
+        self.assertIn('&lt;script&gt;alert(1)&lt;/script&gt;', rendered)
+        self.assertNotIn('<script>', rendered)
+
     def test_accepts_older_date_only_release_without_invented_time(self):
         item = self.post["items"][0]
         item.pop("published_at")

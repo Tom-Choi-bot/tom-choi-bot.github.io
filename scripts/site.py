@@ -272,20 +272,24 @@ def stamp(timestamp: str) -> str:
 def item_card(item: dict) -> str:
     seen_terms = set()
     text = lambda value: magazine.link_text(value, TERMS, seen_terms)
+    def paragraphs(value: str, css_class: str = '') -> str:
+        attrs = f' class="{css_class}"' if css_class else ''
+        return ''.join(f'<p{attrs}>{text(part.strip())}</p>'
+                       for part in re.split(r'\n\s*\n', value.strip()) if part.strip())
     published = stamp(item["published_at"]) if "published_at" in item else e(item["published_on"] + " (시각 미공개)")
     mechanism = item.get("mechanism")
     fact_label = '<div class="analysis-label fact-label">확인된 정보</div>' if mechanism else ''
-    summary, context = text(item['summary']), text(item['context'])
-    mechanism_html = f'<div class="analysis-block mechanism"><div class="analysis-label">작동 원리</div><p>{text(mechanism)}</p></div>' if mechanism else ''
+    summary, context = paragraphs(item['summary'], 'summary'), paragraphs(item['context'])
+    mechanism_html = f'<div class="analysis-block mechanism"><div class="analysis-label">작동 원리</div>{paragraphs(mechanism)}</div>' if mechanism else ''
     title = e(item['title'])
     if item.get('_detail_url'):
         title = f'<a href="{e(item["_detail_url"])}">{title}</a>'
     insight_label = "인사이트·한계" if mechanism else "읽는 법"
     return f'''<article class="news-card"><div class="card-top"><span class="tag">{e(item['category'])}</span><span class="published">발표 {published}</span></div>
-<h3>{title}</h3>{fact_label}<p class="summary">{summary}</p>
-<div class="analysis-block"><div class="analysis-label">숫자와 맥락</div><p>{context}</p></div>
-{mechanism_html}<div class="analysis-block"><div class="analysis-label">{insight_label}</div><p>{text(item['why_it_matters'])}</p></div>
-<div class="next-check"><strong>다음에 확인할 것</strong><p>{text(item['watch_next'])}</p></div>
+<h3>{title}</h3>{fact_label}{summary}
+<div class="analysis-block"><div class="analysis-label">숫자와 맥락</div>{context}</div>
+{mechanism_html}<div class="analysis-block"><div class="analysis-label">{insight_label}</div>{paragraphs(item['why_it_matters'])}</div>
+<div class="next-check"><strong>다음에 확인할 것</strong>{paragraphs(item['watch_next'])}</div>
 <a class="source" href="{e(item['url'])}" target="_blank" rel="noopener noreferrer">원문 · {e(item['source'])} <span aria-hidden="true">↗</span></a></article>'''
 
 
