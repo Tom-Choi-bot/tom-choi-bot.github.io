@@ -23,6 +23,7 @@ SITE_TITLE = "시장노트"
 CSS_VERSION = hashlib.sha256((Path(__file__).resolve().parents[1] / "assets/style.css").read_bytes()).hexdigest()[:12]
 CATEGORIES = {"경제": "economy", "주식": "stocks", "부동산": "housing"}
 SECTIONS = {"미국 시장": "us-market", "한국 시장": "kr-market", "글로벌 변수": "global", "부동산": "housing"}
+BRIEFING_TITLES = ("오늘의 핵심 이슈", "미국 시장", "한국 시장", "글로벌 변수", "오늘 시장에서 특히 볼 것", "시장 해석")
 NAV = [("오늘", "/"), ("뉴스", "/news/"), ("경제", "/economy/"),
        ("청년 정책", "/policies/"), ("지난 기록", "/history/"), ("용어 사전", "/terms/")]
 TERMS = []
@@ -37,6 +38,41 @@ def valid_url(value: object) -> bool:
         return False
     parsed = urlsplit(value)
     return parsed.scheme in {"https", "http"} and bool(parsed.hostname) and not parsed.username
+
+
+def validate_item_text(item: dict) -> None:
+    if not isinstance(item, dict) or item.get("category") not in CATEGORIES:
+        raise ValueError("invalid item category")
+    for key in ("title", "summary", "context", "why_it_matters", "watch_next", "source"):
+        if not isinstance(item.get(key), str) or not item[key].strip():
+            raise ValueError(f"item.{key} required")
+    for key in ("summary", "context", "why_it_matters", "watch_next"):
+        if len(item[key].strip()) < 20:
+            raise ValueError(f"item.{key} too short")
+
+
+def validate_release(item: dict, cutoff: datetime) -> None:
+    if ("published_at" in item) == ("published_on" in item):
+        raise ValueError("exactly one of published_at or published_on required")
+    if "published_at" in item:
+        try:
+            parsed = datetime.fromisoformat(item["published_at"])
+            if parsed.tzinfo is None or parsed > cutoff:
+                raise ValueError("missing timezone or published after cutoff")
+        except (TypeError, ValueError) as exc:
+            raise ValueError("item.published_at needs timezone and must precede cutoff") from exc
+    else:
+        try:
+            if date.fromisoformat(item["published_on"]) >= cutoff.date():
+                raise ValueError("date-only release could be after cutoff")
+        except (TypeError, ValueError) as exc:
+            raise ValueError("item.published_on must precede cutoff date") from exc
+
+
+def briefing_references(post: dict) -> dict:
+    return {entry["url"]: entry for key in ("items", "briefing_sources", "trends", "calendar", "money_flow")
+            for entry in (post.get(key) if isinstance(post.get(key), list) else [])
+            if isinstance(entry, dict) and valid_url(entry.get("url"))}
 
 
 def validate_post(post: dict) -> None:
@@ -69,30 +105,18 @@ def validate_post(post: dict) -> None:
     if len(items) > 12:
         raise ValueError("too many items for one brief")
     seen = set()
-    for item in items:
-        if not isinstance(item, dict) or item.get("category") not in CATEGORIES:
-            raise ValueError("invalid item category")
-        for key in ("title", "summary", "context", "why_it_matters", "watch_next", "source"):
-            if not isinstance(item.get(key), str) or not item[key].strip():
-                raise ValueError(f"item.{key} required")
-        for key in ("summary", "context", "why_it_matters", "watch_next"):
-            if len(item[key].strip()) < 20:
-                raise ValueError(f"item.{key} too short")
-        if ("published_at" in item) == ("published_on" in item):
-            raise ValueError("exactly one of published_at or published_on required")
-        if "published_at" in item:
-            try:
-                parsed = datetime.fromisoformat(item["published_at"])
-                if parsed.tzinfo is None or parsed > cutoff:
-                    raise ValueError("missing timezone or published after cutoff")
-            except (TypeError, ValueError) as exc:
-                raise ValueError("item.published_at needs timezone and must precede cutoff") from exc
+    extra_sources = post.get("briefing_sources", [])
+    if not isinstance(extra_sources, list) or len(extra_sources) > 12:
+        raise ValueError("briefing_sources must be at most twelve sources")
+    for index, item in enumerate(items + extra_sources):
+        if not isinstance(item, dict):
+            raise ValueError("invalid source entry")
+        if index >= len(items):
+            if not isinstance(item.get("source"), str) or not item["source"].strip():
+                raise ValueError("briefing source name required")
         else:
-            try:
-                if date.fromisoformat(item["published_on"]) >= cutoff.date():
-                    raise ValueError("date-only release could be after cutoff")
-            except (TypeError, ValueError) as exc:
-                raise ValueError("item.published_on must precede cutoff date") from exc
+            validate_item_text(item)
+        validate_release(item, cutoff)
         url = item.get("url")
         if not valid_url(url):
             raise ValueError("item.url must be a public http(s) URL")
@@ -100,6 +124,25 @@ def validate_post(post: dict) -> None:
         if normalized in seen:
             raise ValueError("duplicate item URL")
         seen.add(normalized)
+    if "briefing" in post:
+        briefing = post["briefing"]
+        if not isinstance(briefing, list) or len(briefing) != 6 or any(not isinstance(b, dict) for b in briefing):
+            raise ValueError("briefing needs six sections")
+        if tuple(b.get("title") for b in briefing) != BRIEFING_TITLES:
+            raise ValueError("briefing sections must follow the user prompt")
+        references = briefing_references(post)
+        for block in briefing:
+            points = block.get("points")
+            if not isinstance(points, list) or not 1 <= len(points) <= 5:
+                raise ValueError("briefing section needs one to five points")
+            if block["title"] == "시장 해석" and len(points) != 3:
+                raise ValueError("market interpretation needs three variables")
+            for point in points:
+                if not isinstance(point, dict) or not isinstance(point.get("text"), str) or len(point["text"].strip()) < 20:
+                    raise ValueError("briefing point needs substantive text")
+                urls = point.get("references")
+                if not isinstance(urls, list) or not 1 <= len(urls) <= 5 or any(not isinstance(u, str) or u not in references for u in urls):
+                    raise ValueError("briefing point must reference validated post sources")
     flows = post.get("money_flow", [])
     if not isinstance(flows, list):
         raise ValueError("money_flow must be a list")
@@ -336,6 +379,20 @@ def trend_card(trend: dict) -> str:
     return f'''<article class="trend-card"><h3>{e(trend['title'])}</h3><div class="trend-ends"><span>{e(points[0]['date'])} <strong>{e(first_value)}{unit}</strong></span><span>→</span><span>{e(points[-1]['date'])} <strong>{e(last_value)}{unit}</strong></span></div><div class="trend-chart">{svg}</div><p class="trend-insight"><strong>읽을 점</strong> {e(trend['insight'])}</p><p class="visual-caption">{e(trend['caption'])}</p><p class="visual-source">마지막 관측 {e(trend['as_of'])} · API 조회 {stamp(trend['retrieved_at'])} · <a href="{e(trend['url'])}" target="_blank" rel="noopener noreferrer">원자료 · {e(trend['source'])} ↗</a></p><details class="raw-data"><summary>관측치 {len(points)}개 보기</summary><div class="raw-data-scroll"><table><caption>{e(trend['title'])} 원자료</caption><thead><tr><th scope="col">관측일</th><th scope="col">값</th></tr></thead><tbody>{rows}</tbody></table></div></details></article>'''
 
 
+def briefing_overview(post: dict) -> str:
+    if not post.get("briefing"):
+        return ""
+    references = briefing_references(post)
+    blocks = []
+    for index, block in enumerate(post["briefing"], 1):
+        points = []
+        for point in block["points"]:
+            links = ' · '.join(f'<a href="{e(url)}" target="_blank" rel="noopener noreferrer">{e(references[url]["source"])} ↗</a>' for url in point["references"])
+            points.append(f'<li><p>{e(point["text"])}</p><div class="briefing-sources">{links}</div></li>')
+        blocks.append(f'<section><h3>{index}. {e(block["title"])}</h3><ul>{"".join(points)}</ul></section>')
+    return f'<section class="briefing-overview" id="five-minute-brief" aria-label="5분 시장 브리핑"><div class="eyebrow">오늘의 경제</div><h2>5분 시장 브리핑</h2><p class="briefing-intro">{e(post["date"])} 06:00 KST 기준 · 핵심을 읽고 아래에서 이슈별 근거와 원리를 확인하세요.</p>{"".join(blocks)}<a class="text-link" href="#us-market">이슈별 자세한 해설 읽기 ↓</a></section>'
+
+
 def brief_body(post: dict, *, home: bool = False, previous: dict | None = None) -> str:
     published = e(post["date"])
     cutoff = e(post["cutoff_at"][11:16])
@@ -376,7 +433,7 @@ def brief_body(post: dict, *, home: bool = False, previous: dict | None = None) 
         hero_description = '' if trends or visuals else f'<p class="hero-description">{e(post["lead"])}</p>'
         return f'''<main id="main" class="wrap"><section class="hero{' hero-with-visual' if trends or visuals else ''}"><div class="eyebrow"><span class="live-dot"></span> {label} <span class="hero-date">{published} {cutoff} KST 기준</span></div>
 <h1>{e(post['headline'])}</h1>{hero_description}{revision}<a class="terms-prompt" href="/terms/">기사 속 용어가 낯설다면 · 경제 용어 보기 →</a></section>
-{delta_section}{overview}{repeat_note}
+{delta_section}{briefing_overview(post)}{overview}{repeat_note}
 <nav class="brief-jump" aria-label="브리핑 섹션">{nav}</nav>
 <div class="content-grid"><div class="main-column">{''.join(sections)}</div>
 <aside class="side-column" aria-label="돈의 흐름"><div class="flow-panel" id="money-flow"><div class="panel-label">FOCUS / MONEY FLOW</div><h2>돈의 흐름</h2><p class="panel-intro">통계의 대상 기간과 자금 유입액을 구분합니다.</p>{flow_html}</div></aside></div>

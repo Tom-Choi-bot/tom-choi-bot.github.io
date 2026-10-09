@@ -79,6 +79,56 @@ class SiteTests(unittest.TestCase):
             home = (root / "dist/index.html").read_text(encoding="utf-8")
             self.assertIn("발표 2026-10-04 (시각 미공개)", home)
 
+    def add_briefing(self, post):
+        from scripts.site import BRIEFING_TITLES
+        post['briefing'] = [
+            {'title': title, 'points': [
+                {'text': '검증한 사실과 시장 해석을 구분하고 <script> 문자를 그대로 설명합니다.',
+                 'references': [post['items'][0]['url']]}
+                for _ in range(3 if title == '시장 해석' else 1)]}
+            for title in BRIEFING_TITLES]
+        return post
+
+    def test_briefing_is_rendered_before_details_with_sources_and_escaped_text(self):
+        from scripts.site import brief_body, BRIEFING_TITLES
+        post = self.add_briefing(self.sectioned_post())
+        validate_post(post)
+        rendered = brief_body(post)
+        self.assertLess(rendered.index('id="five-minute-brief"'), rendered.index('id="us-market"'))
+        positions = [rendered.index(f'{i}. {title}</h3>') for i, title in enumerate(BRIEFING_TITLES, 1)]
+        self.assertEqual(positions, sorted(positions))
+        self.assertIn('&lt;script&gt;', rendered)
+        self.assertNotIn('<script>', rendered)
+        self.assertIn('href="https://example.org/usa"', rendered)
+
+    def test_briefing_rejects_unknown_or_unsafe_references_and_wrong_counts(self):
+        baseline = self.add_briefing(self.sectioned_post())
+        for url in ('https://example.org/unverified', 'javascript:alert(1)'):
+            post = deepcopy(baseline)
+            post['briefing'][0]['points'][0]['references'] = [url]
+            with self.subTest(url=url), self.assertRaises(ValueError):
+                validate_post(post)
+        for block, count in ((0, 6), (5, 2)):
+            post = deepcopy(baseline)
+            post['briefing'][block]['points'] = [deepcopy(post['briefing'][block]['points'][0]) for _ in range(count)]
+            with self.subTest(block=block), self.assertRaises(ValueError):
+                validate_post(post)
+
+    def test_briefing_additional_sources_cannot_bypass_cutoff_or_url_checks(self):
+        post = self.add_briefing(self.sectioned_post())
+        source = {'source': '추가 원문', 'url': 'https://example.org/extra',
+                  'published_at': '2026-10-05T05:30:00+09:00'}
+        post['briefing_sources'] = [source]
+        post['briefing'][0]['points'][0]['references'] = [source['url']]
+        validate_post(post)
+        source['published_at'] = '2026-10-05T06:01:00+09:00'
+        with self.assertRaises(ValueError):
+            validate_post(post)
+        source['published_at'] = '2026-10-05T05:30:00+09:00'
+        source['url'] = 'javascript:alert(1)'
+        with self.assertRaises(ValueError):
+            validate_post(post)
+
     def test_rejects_date_only_release_on_cutoff_day(self):
         item = self.post["items"][0]
         item.pop("published_at")
