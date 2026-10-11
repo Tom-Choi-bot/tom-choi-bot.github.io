@@ -72,6 +72,27 @@ class MagazineTests(unittest.TestCase):
         self.assertTrue((self.output / 'news/index.html').is_file())
         self.assertTrue((self.output / 'policies/index.html').is_file())
 
+    def test_new_channel_entries_are_visible_above_an_older_economic_feature(self):
+        news, policy = manuscript(), manuscript('policies')
+        for entry in (news, policy):
+            entry.update(date='2026-10-10', checked_at='2026-10-10T06:03:00+09:00')
+        news['title'] = '새로 확인한 뉴스 <script> 문자도 안전하게 표시'
+        policy['id'] = 'new-policy'
+        accept(news, 'news', self.content)
+        accept(policy, 'policies', self.content)
+        home = self.build()
+        panel = home.split('<section class="recent-updates"', 1)[1].split('</section>', 1)[0]
+        self.assertIn('2026-10-10</time> 최근 업데이트', panel)
+        self.assertIn('/news/2026-10-10/verified-story/', panel)
+        self.assertIn('/policies/2026-10-10/new-policy/', panel)
+        self.assertIn('2026-10-09 브리핑', panel)
+        self.assertIn('이후 새 경제 글은 없습니다.', panel)
+        self.assertIn('&lt;script&gt;', panel)
+        self.assertNotIn('<script>', panel)
+        self.assertLess(home.index('class="recent-updates"'), home.index('class="magazine-hero"'))
+        self.assertIn('경제 브리핑 · <span class="hero-date">2026-10-09 06:00 KST 기준</span>', home)
+        self.assertIn('미발행', check_home(home, '2026-10-10'))
+
     def test_news_and_policy_input_reach_listing_detail_history_and_feed(self):
         news, policy = manuscript(), manuscript('policies')
         policy['id'] = 'housing-support'

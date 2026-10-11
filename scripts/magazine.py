@@ -194,19 +194,41 @@ def freshness(label, value, url, kind):
     return f'<a class="edition-status" href="{url}"><strong>{label}</strong><span>{kind} {e(value) if value else "확인된 원고 없음"}</span><small data-fresh-date="{e(value[:10] if value else "")}">{"기록 보기 →" if value else "자료 준비 전"}</small></a>'
 
 
+def recent_updates(posts, news, policies):
+    dates = [entry['date'] for entry in posts + news + policies]
+    if not dates:
+        return '', ''
+    newest = max(dates)
+    rows = []
+    for label, channel, entries in [('뉴스', 'news', news), ('청년 정책', 'policies', policies)]:
+        for entry in entries:
+            if entry['date'] == newest:
+                rows.append(f'<li><span>{label}</span><a href="{entry_url(entry, channel)}">{e(entry["title"])} ↗</a></li>')
+    latest = posts[0] if posts else None
+    if latest and latest['date'] == newest:
+        rows.append(f'<li><span>경제</span><a href="/{e(latest["date"])}/">{e(latest["headline"])} ↗</a></li>')
+    economy_note = ''
+    if latest and latest['date'] < newest:
+        economy_note = f'<p class="update-note">경제는 <a href="/{e(latest["date"])}/">{e(latest["date"])} 브리핑</a>을 유지하고 있습니다. 이후 새 경제 글은 없습니다.</p>'
+    panel = f'<section class="recent-updates" aria-label="최근 업데이트"><h2><time datetime="{e(newest)}">{e(newest)}</time> 최근 업데이트</h2><ul>{"".join(rows)}</ul>{economy_note}</section>'
+    return newest, panel
+
+
 def home(posts, terms, news, policies):
     latest = posts[0] if posts else None
     headline = latest['headline'] if latest else '오늘을 이해하는 새로운 읽기'
     lead = latest['lead'] if latest else '뉴스의 배경, 시장의 흐름, 생활에 필요한 정책을 근거와 함께 읽습니다.'
     feature_url = f'/{latest["date"]}/' if latest else '/economy/'
-    feature = f'''<section class="magazine-hero"><div class="feature-story"><div class="eyebrow">THE DAILY NOTE · 경제 브리핑</div><h1><a href="{feature_url}">{e(headline)}</a></h1><p>{link_text(excerpt(lead, 240), terms)}</p><a class="feature-link" href="{feature_url}">브리핑 전체 읽기 <span aria-hidden="true">↗</span></a></div><aside class="editor-note"><span class="issue-number">READ / UNDERSTAND / ACT</span><h2>흐름을 읽고,<br>내일을 준비합니다.</h2><p>핵심은 간결하게.<br>배경과 근거는 충분하게.</p><a href="/terms/">낯선 용어부터 알아보기 →</a></aside></section>'''
+    feature_date = f' · <span class="hero-date">{e(latest["date"])} {e(latest["cutoff_at"][11:16])} KST 기준</span>' if latest else ''
+    feature = f'''<section class="magazine-hero"><div class="feature-story"><div class="eyebrow">경제 브리핑{feature_date}</div><h1><a href="{feature_url}">{e(headline)}</a></h1><p>{link_text(excerpt(lead, 240), terms)}</p><a class="feature-link" href="{feature_url}">브리핑 전체 읽기 <span aria-hidden="true">↗</span></a></div><aside class="editor-note"><span class="issue-number">READ / UNDERSTAND / ACT</span><h2>흐름을 읽고,<br>내일을 준비합니다.</h2><p>핵심은 간결하게.<br>배경과 근거는 충분하게.</p><a href="/terms/">낯선 용어부터 알아보기 →</a></aside></section>'''
     status = '<nav class="edition-status-grid" aria-label="분야별 자료 업데이트">' + freshness('뉴스', news[0]['date'] if news else '', '/news/', '마지막 확인') + freshness('경제', latest['date'] if latest else '', '/economy/', '자료 기준') + freshness('청년 정책', policies[0]['date'] if policies else '', '/policies/', '마지막 확인') + '</nav>'
     news_cards = ''.join(entry_preview(n, 'news', terms) for n in news[:3]) or empty('news')
     policy_cards = ''.join(entry_preview(p, 'policies', terms) for p in sorted(policies, key=lambda p: (policy_status(p) == '마감', p['deadline'] or '9999'))[:3]) or empty('policies')
     markets = ''.join(preview(i['title'], i['summary'], article_url(latest, i), i.get('section', i['category']), '발표 ' + release(i), terms, 'data-market-card') for i in latest['items']) if latest else '<p>확인된 경제 브리핑이 없습니다.</p>'
     changes = ''.join(f'<li><strong>{e(c["label"])}</strong><span>{e(c["after"])}</span><p>{e(c["insight"])}</p><a href="{e(c["previous_url"])}">이전 원문</a> · <a href="{e(c["url"])}">이번 원문 ↗</a></li>' for c in (latest or {}).get('changes', []))
     changes_html = f'<aside class="magazine-changes"><h3>어제와 달라진 점</h3><ul>{changes}</ul></aside>' if changes else ''
-    date_label = f'<span class="hero-date">{e(latest["date"])} {e(latest["cutoff_at"][11:16])} KST 기준</span>' if latest else '<span>확인된 브리핑 준비 전</span>'
+    newest, updates = recent_updates(posts, news, policies)
+    date_label = f'<span class="edition-updated">최근 원고 {e(newest)} · KST</span>' if newest else '<span>확인된 원고 준비 전</span>'
     dates = []
     now = datetime.now(KST)
     for event in (latest or {}).get('calendar', []):
@@ -216,7 +238,7 @@ def home(posts, terms, news, policies):
         if policy['deadline'] and date.fromisoformat(policy['deadline']) >= now.date():
             dates.append(f'<li><time>{e(policy["deadline"])} 마감 · 시각은 공고 확인</time><a href="{entry_url(policy,"policies")}">{e(policy["title"])}</a></li>')
     calendar = '<section class="magazine-calendar"><h2>앞으로의 일정</h2><ul>' + (''.join(dates) or '<li>현재 확인된 예정 일정이 없습니다.</li>') + '</ul></section>'
-    return f'''<div class="edition-line"><span>THE MARKET NOTE</span>{date_label}</div>{feature}{status}
+    return f'''<div class="edition-line"><span>THE MARKET NOTE</span>{date_label}</div>{updates}{feature}{status}
 <section class="magazine-section" id="news">{section_header('주요 뉴스', '사건 너머의 배경과 맥락', '/news/')}<div class="magazine-cards">{news_cards}</div></section>
 <section class="magazine-section" id="markets">{section_header('경제·시장', '숫자에서 원리까지, 한국과 세계를 함께', '/economy/')}<div class="market-layout"><div class="magazine-cards">{markets}</div>{changes_html}</div></section>
 <section class="magazine-section" id="policies">{section_header('청년 정책', '대상부터 신청까지, 알아두면 쓸모 있는 지원', '/policies/')}<div class="magazine-cards">{policy_cards}</div></section>{calendar}
