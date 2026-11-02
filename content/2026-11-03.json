@@ -1,0 +1,270 @@
+{
+  "date": "2026-11-03",
+  "cutoff_at": "2026-11-03T06:00:00+09:00",
+  "checked_at": "2026-11-03T06:09:09+09:00",
+  "brief_type": "sectioned",
+  "headline": "미 제조업 PMI 55.5로 상승, 코스피는 반등…배터리 규제와 중국 유동성 조치의 실제 이행을 보자",
+  "lead": "11월 2일 미국 ISM 제조업 조사는 10월 활동 확장이 빨라졌지만 원자재 가격 압력도 여전히 높다고 보여줬다. 한국 코스피는 10월 30일 급락 후 11월 2일 5,859.08로 반등했고, 원/달러는 되레 올랐다. 정부는 이차전지·ESS 규제 개선안을 발표했으나 상당수는 향후 개정·안전성 검증을 거쳐야 한다. 중국의 증시 유동성 지원 역시 신청액과 실제 집행액을 구분해야 한다. 미국 11월 2일 3대 지수 확정 종가는 마감 시각까지 원문 대조가 되지 않아 수치를 싣지 않는다.",
+  "changes": [
+    {
+      "label": "미국 제조업 PMI: 9월→10월",
+      "before": "9월 54.5",
+      "after": "10월 55.5",
+      "insight": "같은 ISM 제조업 확산지수가 1.0포인트 높아졌다. 50 이상은 응답의 확장 우위를 뜻하며 생산량 증가율 자체는 아니다.",
+      "previous_url": "https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/pmi/september/",
+      "url": "https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/pmi/october/"
+    },
+    {
+      "label": "코스피 종가: 10월 30일→11월 2일",
+      "before": "10월 30일 5,730.74",
+      "after": "11월 2일 5,859.08",
+      "insight": "같은 지수의 거래일 종가가 128.34포인트 올랐다. 반등의 지속 여부와 외국인 수급은 별도로 확인해야 한다.",
+      "previous_url": "https://www.bok.or.kr/portal/bbs/P0002018/view.do?nttId=11066161&menuNo=200366",
+      "url": "https://www.businesskorea.co.kr/news/articleView.html?idxno=280249"
+    },
+    {
+      "label": "원/달러 주간 종가: 10월 30일→11월 2일",
+      "before": "10월 30일 1,334.3원",
+      "after": "11월 2일 1,343.8원",
+      "insight": "같은 원/달러 환율이 9.5원 상승했다. 원화가 약해진 방향으로, 코스피 상승과 동시에 나타났으므로 위험선호 회복을 단정할 수 없다.",
+      "previous_url": "https://www.bok.or.kr/portal/bbs/P0002018/view.do?nttId=11066161&menuNo=200366",
+      "url": "https://www.businesskorea.co.kr/news/articleView.html?idxno=280249"
+    }
+  ],
+  "items": [
+    {
+      "section": "미국 시장",
+      "category": "경제",
+      "title": "11월 2일 발표: 10월 ISM 제조업 PMI 55.5, 생산 확장과 비용 압력 공존",
+      "summary": "미국 공급관리협회(ISM)가 11월 2일 오전 10시 미국 동부시간에 발표한 10월 제조업 PMI는 55.5로 9월 54.5보다 1.0포인트 높았다. 신규주문 55.5, 생산 59.0, 고용 52.4, 투입가격 75.2였다. 10월 활동을 묻는 조사이지 11월 2일 하루의 공장 생산량이나 주가가 아니다.",
+      "context": "ISM의 9월 원문과 10월 원문을 대조하면 생산지수는 56.7에서 59.0으로 2.3포인트 올라갔고, 가격지수는 77.9에서 75.2로 2.7포인트 내려왔다. 가격지수가 낮아졌어도 50을 크게 웃돌기 때문에 가격 하락을 뜻하지 않는다. 신규주문은 55.3에서 55.5로 소폭 증가했고 고용은 52.7에서 52.4로 소폭 낮아졌다. 따라서 한 숫자만으로 수요·비용·고용을 같은 방향이라고 묶을 수 없다.\n\nPMI는 기업 구매관리자의 응답을 합친 확산지수다. 50 위는 활동이 늘었다는 답이 줄었다는 답보다 우세하다는 뜻이다. 지수 55.5를 생산액이 전월보다 5.5% 늘었다고 읽으면 틀린다. 10월 28일 연준은 기준금리 목표 범위를 3.75~4.00%로 유지하고 인플레이션이 높다고 명시했다. 이 결정은 이번 PMI보다 먼저 나왔으므로 새 PMI에 대한 연준의 반응으로 해석하지 않는다. 출처: https://www.federalreserve.gov/newsevents/pressreleases/monetary20261028a.htm",
+      "mechanism": "신규주문이 늘면 제조업체는 먼저 기존 재고를 쓰고, 주문이 지속되면 부품·원재료 발주와 생산 시간을 늘릴 수 있다. 생산 확장이 기계·전자 부품 수요로 이어질 경우 공급업체 매출에 긍정적일 수 있다. 반면 납기가 길어지고 원자재 가격이 높은 상태라면 같은 매출 증가에도 제조 원가가 더 빠르게 늘어 이익률이 눌릴 수 있다. 기업이 가격을 소비자에게 전가하면 물가 압력이 남고, 전가하지 못하면 이익이 줄어든다.\n\n가상의 예로 제품 매출이 100에서 105로 늘지만 재료비가 70에서 77로 늘면, 다른 비용을 빼기 전 차액은 30에서 28로 줄어든다. 이 계산은 실제 기업 실적이나 ISM 지수의 환산값이 아니다. 금리 경로에서는 강한 활동 지표와 높은 가격 압력이 함께 확인될 때 연준이 물가 둔화를 더 지켜볼 이유가 커질 수 있다. 이는 해석이며 다음 금리 결정이 확정됐다는 뜻은 아니다.",
+      "why_it_matters": "미국 제조업의 활동 확장은 산업재·물류·반도체 수요의 선행 신호일 수 있고 한국 수출 기업에도 주문 기대를 줄 수 있다. 그러나 ISM 응답은 업종별 편차가 크고 실제 반도체 주문·수출 계약을 측정하지 않는다. 이번 보고서에서도 컴퓨터·전자제품은 일부 활동이 확대됐지만 전자 부품 공급난과 비용 증가에 관한 기업 의견이 함께 나왔다. 수혜라는 단어보다 주문량, 납기, 매출총이익률이 실제로 함께 개선되는지 보는 편이 정확하다.\n\n반대 조건도 있다. 생산 증가가 미뤄졌던 주문을 단기간 처리한 결과라면 다음 달 지수가 되돌릴 수 있다. 가격지수가 높게 유지되고 임금·운송비가 상승하면 채권금리와 할인율에 부담을 주어 성장주의 평가에 불리할 수 있다. 주식시장의 11월 2일 3대 지수 확정 종가는 06:00 이전 신뢰 가능한 원문으로 대조하지 못해 제시하지 않는다. 10월 30일 수치를 11월 2일 종가로 바꾸어 쓰지 않는다.",
+      "watch_next": "11월 4일 발표 예정인 ISM 서비스업 PMI에서는 제조업 밖의 수요·가격 흐름을 확인한다. 11월 6일 미국 고용보고서의 고용·실업률·임금이 함께 완화되는지 살핀다. 다음 ISM에서 신규주문이 50 아래로 내려가거나 가격지수가 다시 오르면 이번 제조업 확장에 대한 성장·물가 해석을 수정해야 한다. 특정 업종 실적은 실제 공시의 주문 잔고와 비용률로 따로 검증한다.",
+      "source": "미국 공급관리협회 2026년 10월 제조업 PMI",
+      "url": "https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/pmi/october/",
+      "published_at": "2026-11-02T10:00:00-05:00"
+    },
+    {
+      "section": "한국 시장",
+      "category": "주식",
+      "title": "11월 2일 코스피 5,859.08 반등, 외국인 매도와 원화 약세는 남았다",
+      "summary": "11월 2일 한국거래소 마감 수치를 인용한 BusinessKorea에 따르면 코스피는 5,859.08로 직전 거래일보다 128.34포인트(2.24%) 상승했고 코스닥은 734.36으로 9.98포인트(1.38%) 올랐다. 한국은행의 11월 2일 게시물은 10월 30일 관측치인 코스피 5,730.74·코스닥 724.38을 담고 있어 비교 기준으로만 사용했다. 11월 2일 새 장의 지수로 오인하지 않는다.",
+      "context": "코스피는 10월 30일 5,730.74로 전 거래일 5,937.66에서 큰 폭 내려간 뒤 11월 2일 일부를 회복했다. 전 거래일 급락폭 206.92포인트에 비하면 이번 반등 128.34포인트는 전부를 메운 것은 아니다. 11월 2일 주간 원/달러 환율은 1,343.8원으로 10월 30일 1,334.3원보다 9.5원 올랐다. 주가 반등과 원화 강세가 동시에 나타난 장은 아니었다. 출처: https://www.bok.or.kr/portal/bbs/P0002018/view.do?nttId=11066161&menuNo=200366 ; https://www.businesskorea.co.kr/news/articleView.html?idxno=280249\n\n수급 방향은 기관 순매수, 외국인 순매도로 두 매체가 일치하지만 금액은 BusinessKorea와 MoneyToday의 보도가 크게 다르다. 따라서 순매수·순매도 규모를 확정 수치처럼 적지 않는다. 기업별 등락과 업종 전체의 성과도 다르다. 반도체 대형주가 지수 반등을 이끌었다는 보도와 달리 일부 이차전지·바이오 대형주는 약세였다. 한국은행의 10월 22일 결정은 기준금리 3.00% 동결이었으며 이번 장에서 새 금리 결정이 나온 것은 아니다. 출처: https://www.mt.co.kr/en/stock/2026/11/02/2026110215573230819 ; https://www.bok.or.kr/portal/bbs/P0000559/view.do?depth=200690&menuNo=200690&nttId=11065823&oldMenuNo=201150&programType=newsData&relate=Y",
+      "mechanism": "코스피는 시가총액이 큰 기업의 가격 변화가 지수에 더 크게 작용한다. 대형 반도체 주식이 전날 낙폭을 되돌리면 다른 업종이 고르게 오르지 않아도 지수가 크게 반등할 수 있다. 기관의 매수는 단기적으로 매도 물량을 받아내지만 해외 자금의 수요가 돌아왔는지까지 증명하지 않는다. 외국인이 순매도하고 원/달러가 오르면 해외 투자자가 원화 자산을 보유할 때 체감하는 달러 기준 수익률은 지수 상승률보다 낮아질 수 있다.\n\n예를 들어 가정상 원화 주가가 2% 오르더라도 같은 기간 원화 가치가 달러 대비 1% 약해지면 달러로 환산한 수익은 대략 1% 안팎에 그친다. 이는 설명을 위한 단순 예시이며 11월 2일 실제 환산 수익률이 아니다. 수출 기업에는 약한 원화가 달러 매출 환산액을 높일 수 있지만 원자재 수입 기업과 가계 에너지 비용에는 반대 효과가 가능하다. 실제 이익은 환헤지·원가·계약 시차에 달린다.",
+      "why_it_matters": "오늘의 의미는 반도체 수익 전망이 확정적으로 개선됐다는 판정이 아니라, 큰 하락 직후 국내 매수 수요가 어느 정도 가격을 지탱했다는 관측이다. 반도체 수출 통계는 11월 1일 발표된 10월 실적이며, 이 주식 매매는 11월 2일의 별도 사건이다. 두 날짜를 섞어 수출 증가가 곧바로 주가 반등의 유일한 원인이라고 단정하지 않는다.\n\n반대 시나리오는 외국인 매도가 이어지거나 원/달러가 더 올라 달러 기준 성과가 약해지는 경우다. 반대로 기관 매수 뒤 외국인 수급도 개선되고 반도체 기업의 실제 주문·마진이 확인되면 반등의 폭과 질을 다시 평가할 근거가 생긴다. 한국은행 기준금리 3.00%와 주택·가계부채 우려는 10월 22일의 배경이며 오늘 새 발표로 포장하지 않는다.",
+      "watch_next": "11월 3일 장에서는 코스피·코스닥의 종가뿐 아니라 외국인·기관의 확정 매매동향, 반도체 이외 업종의 상승 종목 비율, 원/달러의 15시 30분 종가를 함께 본다. 서로 다른 매체의 11월 2일 수급 금액이 불일치하므로 한국거래소 확정 집계가 확인되면 금액 해석을 갱신한다. 지수가 오르더라도 원화 약세와 외국인 매도가 계속되면 반등이 넓은 위험선호 회복이라는 판단은 유보한다.",
+      "source": "BusinessKorea 2026년 11월 2일 한국 증시 마감",
+      "url": "https://www.businesskorea.co.kr/news/articleView.html?idxno=280249",
+      "published_at": "2026-11-02T17:17:00+09:00"
+    },
+    {
+      "section": "한국 시장",
+      "category": "경제",
+      "title": "11월 2일 발표된 이차전지 규제 개선안, 시행 시점과 안전성 검증이 핵심",
+      "summary": "국무조정실은 11월 2일 에너지저장장치(ESS) 설치와 폐배터리 재활용 등을 포함한 이차전지 분야 규제 개선방안을 발표했다. 8월 28일 먼저 발표한 6개 과제와 10월 30일 확정한 12개를 합쳐 18개 과제다. 그러나 컨테이너 내부 CCTV 예외 등은 관련 심의와 2027년 규정 개정을 거쳐야 하므로 11월 2일부터 현장 규제가 즉시 사라진 것은 아니다.",
+      "context": "원문은 사람이 통행할 수 없는 ESS 컨테이너에서 배터리관리시스템(BMS) 등 대체 관리 기술이 적용된 경우 CCTV 의무 제외를 추진한다고 밝혔다. 연말까지 관련 위원회 심의를 거쳐 결과에 따라 2027년 한국전기설비규정 개정을 추진한다. 전력변환장치(PCS)를 배터리와 같은 컨테이너에 배치하는 기술도 안전성 입증 후 제도를 바꾸겠다는 단계로, 관련 연구개발 기한은 2028년까지다.\n\n폐배터리 재활용에서는 같은 종류의 폐수배출시설 배출량이 10% 미만 증가할 때 변경신고를 면제하거나 사후신고로 갈음하는 방안을 2027년 하위법령 개정으로 추진한다. 이 수치는 모든 배출을 10%까지 자유롭게 허용한다는 뜻이 아니다. 시설의 종류와 신고 요건이라는 제한된 범위가 있다. 10월 30일 위원회 확정일과 11월 2일 발표일, 향후 법령 시행일을 각각 구분해야 한다.",
+      "mechanism": "ESS는 전기를 저장했다가 수요가 높을 때 공급하는 설비다. 설치 부지와 안전 장치 기준이 바뀌면 한 시설을 짓는 데 필요한 공간·설계·허가 시간이 달라질 수 있다. 통로가 없는 컨테이너에서 중복 감시 장치를 합리화하면 설비 비용을 줄일 가능성이 있지만, 화재 감지와 배터리 상태 관리는 반드시 유지돼야 한다. PCS 동실 배치는 배선·부지 비용을 줄일 수 있어도 열·화재 위험을 검증하기 전에는 비용 절감 효과를 실현했다고 볼 수 없다.\n\n재활용 업체는 원료 배터리 종류가 달라질 때 공정과 허가 자료를 자주 바꿔야 할 수 있다. 제한된 변경 절차를 간소화하면 시험·처리 속도와 행정비용에 영향이 있을 수 있다. 반대로 폐수와 화학물질 안전 기준을 낮추거나 감시가 약해진다면 장기적인 사고 비용이 커질 수 있다. 따라서 규제 문구, 검사 방식과 실제 안전 지표가 함께 움직여야 경제 효과를 평가할 수 있다.",
+      "why_it_matters": "투자자에게는 정부 발표의 과제 수보다 어떤 항목이 실제 시행되고 기업의 설비투자·납기에 반영되는지가 중요하다. 이번 발표는 배터리 제조사, ESS 설치사, 재활용사의 비용 구조와 허가 속도에 잠재적 의미가 있지만 당일 매출 증가나 주가 상승을 보장하지 않는다. 특히 12개 과제는 10월 30일 확정된 뒤 11월 2일 공개됐고, 6개는 8월에 먼저 발표됐다. 18개가 모두 처음 공개된 새 규정인 듯한 설명은 피해야 한다.\n\n관련 산업에 수요가 늘어도 제품 가격 경쟁, 중국산 저가 배터리, 안전성 인증 지연이 수익을 제한할 수 있다. 공장·전력망·지방정부 인허가가 이어져야 ESS 발주가 실제 공급계약으로 바뀐다. 따라서 정책의 방향성과 기업 이익을 분리해서 읽는다.",
+      "watch_next": "연말 위원회 심의 결과와 2027년 한국전기설비규정 고시, 폐수배출시설 관련 하위법령 개정안의 적용 범위를 확인한다. PCS 동실 배치의 안전성 실증 결과와 실제 ESS 설치 허가 기간도 본다. 시행이 지연되거나 예외 범위가 좁아지면 비용 절감 기대를 낮춰야 한다.",
+      "source": "국무조정실 이차전지 산업 규제합리화 보도자료",
+      "url": "https://m.korea.kr/briefing/pressReleaseView.do?newsId=156787530&pWise=main&pWiseMain=T2_1&pWiseMinistry=ministryNews&repCode=A00004",
+      "published_on": "2026-11-02"
+    },
+    {
+      "section": "글로벌 변수",
+      "category": "경제",
+      "title": "중국 인민은행 11월 3일 증권사 유동성 스와프 예고, 신청액은 집행액이 아니다",
+      "summary": "로이터가 11월 2일 전한 중국 인민은행 발표에 따르면 인민은행은 11월 3일 증권·펀드·보험사 대상 자산 교환을 실시할 계획이다. 증권사와 펀드사 31곳이 1,000억 위안이 넘는 규모를 신청했다. 이는 신청 수요이며 11월 2일 현재 실제로 그 금액이 주식시장에 투입됐다는 뜻이 아니다. 원래의 중국어 중앙은행 공고 원문은 이 조사에서 직접 열지 못했으므로 로이터 보도로 출처를 명시한다.",
+      "context": "로이터 보도는 이번 조치가 중국 CSI300 지수의 10월 8.5% 하락 뒤 나왔다고 설명한다. 인민은행은 상장사 자사주 매입 등을 돕는 재대출 제도를 장기 운영 체계로 바꾸고 금리를 1.25%에서 1.00%로 낮춘다고도 발표했다. 스와프는 보유 자산을 유동성으로 교환하는 장치이고, 재대출은 적격 매입에 필요한 자금을 금융기관에 빌려주는 장치다. 두 제도를 단순한 현금 지급 한 건으로 합치지 않는다.\n\n11월 2일 상하이종합지수는 1.1% 상승했다는 보도가 있지만 정책 발표 기대와 같은 날 움직임만으로 인민은행 조치가 상승을 일으켰다고 증명할 수 없다. 11월 3일 경매와 실제 주식 매입은 앞으로 일어날 수 있는 단계다. 중국 부동산 부채와 내수 수요 둔화는 이 금융시장 지원과 구별되는 실물경제 문제다.",
+      "mechanism": "증권사가 자금 조달에 쓰기 어려운 자산을 인민은행과 교환해 유동성을 얻으면, 급하게 보유 주식을 팔아 현금을 만들 필요가 줄어들 수 있다. 조건을 충족한 기관이 그 유동성으로 주식을 매수하면 매도 압력 완화로 이어질 가능성이 있다. 하지만 신청액, 낙찰액, 실제 매입액, 최종 시장 가격은 서로 다른 숫자다. 한 단계라도 작아지면 기대했던 완충 효과가 줄어든다.\n\n주가가 안정되면 자산가치와 기업 자금조달 여건이 나아질 수 있고, 이는 중국 내수·한국의 대중국 수출 기대를 간접적으로 지지할 수 있다. 반대로 가계 소비와 부동산 현금흐름이 회복되지 않으면 금융시장 유동성만으로 수입 수요가 크게 늘어난다고 보기는 어렵다. 한국 주식과 원화에 대한 파급도 글로벌 달러·유가·반도체 업황에 따라 달라진다.",
+      "why_it_matters": "이 조치는 시장 안정을 겨냥한 발표이지 중국 경기 회복의 확정 증거가 아니다. 한국의 중국 관련 소재·산업재 기업에 해석상의 재료가 될 수 있지만 실제 주문 증가가 없으면 실적 효과는 제한적이다. 특히 1,000억 위안 이상은 31곳의 신청액이다. 이 수치를 이미 집행된 중앙은행 지출로 적거나 중국 주식에 그만큼 순유입됐다고 표현하면 금융거래 단계가 뒤섞인다.\n\n중국 정부가 지원을 확대해도 물가·부동산·수출 주문이 약하면 실물 수요는 다른 경로로 움직인다. 반대로 정책 이후 거래대금과 민간 신용, 수입 주문이 함께 개선되면 단순한 투자심리 완충을 넘어서는 해석을 검토할 수 있다.",
+      "watch_next": "11월 3일 인민은행의 스와프 낙찰 규모·조건과 이후 참여 기관의 실제 매입 공시를 확인한다. 11월 이후 중국 제조업 신규 수출주문, 소비·부동산 지표, 한국의 대중국 수출 주문을 함께 본다. 낙찰이 신청에 크게 못 미치거나 실물 지표가 계속 악화하면 정책의 경기 파급 기대를 줄여야 한다.",
+      "source": "Reuters, MarketScreener 재게시, 2026년 11월 2일",
+      "url": "https://uk.marketscreener.com/news/china-s-central-bank-taps-liquidity-tool-to-aid-struggling-stocks-ce785fd8de81f723",
+      "published_at": "2026-11-02T10:23:00+00:00"
+    }
+  ],
+  "money_flow": [
+    {
+      "label": "11월 2일 코스피 수급 방향",
+      "text": "기관 순매수와 외국인 순매도가 함께 보도됐다. BusinessKorea와 MoneyToday의 세부 금액은 크게 달라 확정 금액은 제시하지 않는다. 거래소 확정 집계로 재확인할 필요가 있다.",
+      "as_of": "2026-11-02",
+      "source": "BusinessKorea 11월 2일 마감 보도",
+      "url": "https://www.businesskorea.co.kr/news/articleView.html?idxno=280249"
+    }
+  ],
+  "calendar": [
+    {
+      "at": "2026-11-03T10:00:00-05:00",
+      "event": "미국 9월 JOLTS 구인·이직 통계",
+      "watch": "미국 동부시간 10시, 한국시간 11월 4일 0시 예정. 구인 수요가 11월 6일 고용보고서와 같은 방향인지 본다.",
+      "source": "미 노동통계국 2026년 발표 일정",
+      "url": "https://www.bls.gov/schedule/2026/home.htm"
+    },
+    {
+      "at": "2026-11-04T10:00:00-05:00",
+      "event": "미국 10월 ISM 서비스업 PMI",
+      "watch": "미국 동부시간 10시, 한국시간 11월 5일 0시 예정. 제조업과 다른 서비스 수요·가격을 분리해 확인한다.",
+      "source": "미국 공급관리협회 2026년 발표 일정",
+      "url": "https://www.ismworld.org/supply-management-news-and-reports/reports/rob-report-calendar/"
+    },
+    {
+      "at": "2026-11-06T08:30:00-05:00",
+      "event": "미국 10월 고용보고서",
+      "watch": "미국 동부시간 8시 30분 예정. 고용·실업·임금을 함께 대조한다.",
+      "source": "미 노동통계국 2026년 발표 일정",
+      "url": "https://www.bls.gov/schedule/2026/home.htm"
+    }
+  ],
+  "briefing_sources": [
+    {
+      "source": "한국은행 10월 30일 금융시장 관측치, 11월 2일 게시",
+      "url": "https://www.bok.or.kr/portal/bbs/P0002018/view.do?nttId=11066161&menuNo=200366",
+      "published_at": "2026-11-02T16:00:00+09:00"
+    },
+    {
+      "source": "MoneyToday 11월 2일 한국 증시 마감",
+      "url": "https://www.mt.co.kr/en/stock/2026/11/02/2026110215573230819",
+      "published_at": "2026-11-02T16:05:00+09:00"
+    },
+    {
+      "source": "미국 공급관리협회 9월 제조업 PMI",
+      "url": "https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/pmi/september/",
+      "published_at": "2026-10-01T10:00:00-04:00"
+    },
+    {
+      "source": "미국 연준 10월 FOMC 성명",
+      "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20261028a.htm",
+      "published_at": "2026-10-28T14:00:00-04:00"
+    },
+    {
+      "source": "한국은행 10월 통화정책방향",
+      "url": "https://www.bok.or.kr/portal/bbs/P0000559/view.do?depth=200690&menuNo=200690&nttId=11065823&oldMenuNo=201150&programType=newsData&relate=Y",
+      "published_on": "2026-10-22"
+    }
+  ],
+  "briefing": [
+    {
+      "title": "오늘의 핵심 이슈",
+      "points": [
+        {
+          "text": "미국 10월 ISM 제조업 PMI는 9월 54.5에서 55.5로 상승했다. 신규주문과 생산의 확장은 긍정적이지만 가격지수 75.2는 비용 압력이 여전히 넓다는 신호다. 확산지수를 생산 증가율로 읽지 말아야 하며 11월 6일 고용·임금이 금리 해석을 바꿀 수 있다.",
+          "references": [
+            "https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/pmi/october/",
+            "https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/pmi/september/"
+          ]
+        },
+        {
+          "text": "한국 코스피는 10월 30일 5,730.74에서 11월 2일 5,859.08로 128.34포인트 반등했다. 기관 매수와 외국인 매도가 엇갈리고 원/달러는 9.5원 올라, 지수 하나만으로 자금 흐름의 완전한 반전을 선언하기는 이르다.",
+          "references": [
+            "https://www.bok.or.kr/portal/bbs/P0002018/view.do?nttId=11066161&menuNo=200366",
+            "https://www.businesskorea.co.kr/news/articleView.html?idxno=280249"
+          ]
+        },
+        {
+          "text": "국무조정실은 ESS·폐배터리 규제 개선 18개 과제를 발표했다. 6개는 8월 발표분이고 12개는 10월 30일 확정분이다. 안전성 심의와 2027년 규정 개정을 거쳐야 하므로 당장 매출이 늘었다는 해석은 근거가 없다.",
+          "references": [
+            "https://m.korea.kr/briefing/pressReleaseView.do?newsId=156787530&pWise=main&pWiseMain=T2_1&pWiseMinistry=ministryNews&repCode=A00004"
+          ]
+        },
+        {
+          "text": "중국 인민은행은 11월 3일 증권·펀드·보험사 자산 교환을 예고했다. 31개사의 1,000억 위안 넘는 신청은 집행액과 다르다. 금융시장 안정이 한국의 대중국 수출 수요로 연결되려면 실물 지표의 개선이 필요하다.",
+          "references": [
+            "https://uk.marketscreener.com/news/china-s-central-bank-taps-liquidity-tool-to-aid-struggling-stocks-ce785fd8de81f723"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "미국 시장",
+      "points": [
+        {
+          "text": "새로 확인한 수치는 10월 ISM 제조업 PMI 55.5, 생산 59.0, 가격 75.2다. 생산 확장과 높은 비용을 함께 봐야 한다. 연준은 10월 28일 기준금리 목표 3.75~4.00%를 유지했으며 이는 이번 PMI 발표 이전 결정이다.",
+          "references": [
+            "https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/pmi/october/",
+            "https://www.federalreserve.gov/newsevents/pressreleases/monetary20261028a.htm"
+          ]
+        },
+        {
+          "text": "11월 2일 S&P 500·나스닥·다우의 확정 종가와 새 10년물 국채 수익률은 06:00 기준 원문 대조가 끝나지 않았다. 공식 국채 API의 마지막 보수적 관측치는 10월 30일 4.94%로 전일 글과 동일해 차트를 반복하지 않는다. AI 투자 수익성은 실제 실적과 현금흐름에서 후속 확인한다.",
+          "references": [
+            "https://www.federalreserve.gov/newsevents/pressreleases/monetary20261028a.htm",
+            "https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/pmi/october/"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "한국 시장",
+      "points": [
+        {
+          "text": "11월 2일 코스피 5,859.08, 코스닥 734.36으로 각각 직전 거래일보다 2.24%, 1.38% 올랐다. 반도체 대형주의 반등이 지수에 크게 작용했으나 외국인은 매도 우위로 보도됐다. 수급 금액은 매체 간 불일치해 확정치로 제시하지 않는다.",
+          "references": [
+            "https://www.businesskorea.co.kr/news/articleView.html?idxno=280249",
+            "https://www.mt.co.kr/en/stock/2026/11/02/2026110215573230819"
+          ]
+        },
+        {
+          "text": "원/달러 주간 종가는 1,343.8원으로 10월 30일 1,334.3원보다 높다. 한국은행의 10월 22일 기준금리 3.00% 동결은 배경이지 오늘 새 결정이 아니다. 자동차·이차전지 등 업종별 성과는 지수와 다를 수 있으며 ESS 규제 개선은 안전성 검증과 시행 시점을 확인해야 한다.",
+          "references": [
+            "https://www.bok.or.kr/portal/bbs/P0002018/view.do?nttId=11066161&menuNo=200366",
+            "https://www.businesskorea.co.kr/news/articleView.html?idxno=280249",
+            "https://www.bok.or.kr/portal/bbs/P0000559/view.do?depth=200690&menuNo=200690&nttId=11065823&oldMenuNo=201150&programType=newsData&relate=Y",
+            "https://m.korea.kr/briefing/pressReleaseView.do?newsId=156787530&pWise=main&pWiseMain=T2_1&pWiseMinistry=ministryNews&repCode=A00004"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "글로벌 변수",
+      "points": [
+        {
+          "text": "중국의 스와프는 시장 유동성 완충 장치로 해석할 수 있지만 신청액과 실제 낙찰·매수액은 구분해야 한다. 11월 1일 OPEC+ 생산 목표 동결은 전일 글의 사건이어서 새 핵심 이슈로 반복하지 않는다. EIA 브렌트 현물 API는 10월 27일이 마지막 관측치여서 11월 2일 선물 가격처럼 쓰지 않는다.",
+          "references": [
+            "https://uk.marketscreener.com/news/china-s-central-bank-taps-liquidity-tool-to-aid-struggling-stocks-ce785fd8de81f723"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "오늘 시장에서 특히 볼 것",
+      "points": [
+        {
+          "text": "미국 동부시간 11월 3일 10시 JOLTS, 4일 10시 ISM 서비스업, 6일 8시 30분 고용보고서가 예정돼 있다. JOLTS는 한국시간 11월 4일 0시라 오늘 06:00에는 결과가 없다. 중국 스와프 경매 결과와 한국 장의 외국인 수급도 결과가 나온 뒤 판단한다.",
+          "references": [
+            "https://www.bls.gov/schedule/2026/home.htm",
+            "https://www.ismworld.org/supply-management-news-and-reports/reports/rob-report-calendar/",
+            "https://uk.marketscreener.com/news/china-s-central-bank-taps-liquidity-tool-to-aid-struggling-stocks-ce785fd8de81f723"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "시장 해석",
+      "points": [
+        {
+          "text": "첫째 변수는 미국의 생산 확장과 가격 압력의 조합이다. 수요가 이어지면서 가격지수가 낮아지면 우호적이지만, 높은 투입가격이 소비자물가와 금리로 전이되면 성장주 평가에 부담이 될 수 있다.",
+          "references": [
+            "https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/pmi/october/",
+            "https://www.federalreserve.gov/newsevents/pressreleases/monetary20261028a.htm"
+          ]
+        },
+        {
+          "text": "둘째 변수는 한국 반등의 질이다. 지수 상승에 외국인 매수와 원화 안정이 동반되면 폭넓은 회복이라는 해석이 강해지지만, 매도와 환율 상승이 지속되면 단기 반등으로 남을 수 있다.",
+          "references": [
+            "https://www.bok.or.kr/portal/bbs/P0002018/view.do?nttId=11066161&menuNo=200366",
+            "https://www.businesskorea.co.kr/news/articleView.html?idxno=280249"
+          ]
+        },
+        {
+          "text": "셋째 변수는 정책의 집행이다. 중국은 스와프 낙찰과 실제 매입, 한국 ESS는 규정 개정과 안전성 입증이 확인점이다. 발표 규모를 곧바로 기업 실적이나 실물 수요로 환산하지 않는다.",
+          "references": [
+            "https://uk.marketscreener.com/news/china-s-central-bank-taps-liquidity-tool-to-aid-struggling-stocks-ce785fd8de81f723",
+            "https://m.korea.kr/briefing/pressReleaseView.do?newsId=156787530&pWise=main&pWiseMain=T2_1&pWiseMinistry=ministryNews&repCode=A00004"
+          ]
+        }
+      ]
+    }
+  ]
+}
